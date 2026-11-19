@@ -65,6 +65,18 @@ export interface Message {
   createdAt: string;
 }
 
+export interface AuditLog {
+  id: string;
+  organizationId?: string;
+  actorId?: string;
+  action: string;
+  resource: string;
+  resourceId?: string;
+  metadata?: Record<string, unknown>;
+  ip?: string;
+  createdAt: string;
+}
+
 export interface Overview {
   totalProjects: number;
   activeAgentTasks: number;

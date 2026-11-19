@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   Activity, Bot, Braces, Code2, Command, FolderGit2, Gauge, Github, Layers3,
-  Menu, MessageSquare, Search, Settings, ShieldCheck, FlaskConical, X, Bug, GitPullRequest,
+  Menu, MessageSquare, Search, Settings, ShieldCheck, FlaskConical, X, Bug, GitPullRequest, ScrollText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from './ui';
@@ -24,6 +24,7 @@ const NAV = [
   { group: 'Intelligence', items: [
     { to: '/github', label: 'GitHub', icon: Github },
     { to: '/analytics', label: 'Analytics', icon: Activity },
+    { to: '/audit', label: 'Audit Log', icon: ScrollText },
     { to: '/settings', label: 'Settings', icon: Settings },
   ] },
 ];
