@@ -13,6 +13,7 @@ export function SecurityPage() {
   const [scan, setScan] = useState<SecurityScan | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [advisoryNote, setAdvisoryNote] = useState('');
 
   const owasp = useQuery({ queryKey: ['owasp'], queryFn: () => api.get<{ categories: Array<{ id: string; name: string; guidance: string; checks: string[] }> }>('/security/owasp') });
 
@@ -25,6 +26,27 @@ export function SecurityPage() {
       setScan(result.scan);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Scan failed');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runLiveScan() {
+    setBusy(true);
+    setError('');
+    setAdvisoryNote('');
+    try {
+      const files = JSON.parse(filesJson) as Array<{ path: string; content: string }>;
+      const result = await api.post<{
+        scan: SecurityScan;
+        advisory: { queriedPackages: number; success: boolean; error?: string; reason?: string };
+      }>('/security/scan/live', { files });
+      setScan(result.scan);
+      setAdvisoryNote(result.advisory.success
+        ? `OSV queried ${result.advisory.queriedPackages} packages.`
+        : `Advisory lookup unavailable: ${result.advisory.error ?? result.advisory.reason ?? 'unknown error'}. Offline findings shown.`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Live scan failed');
     } finally {
       setBusy(false);
     }
@@ -45,8 +67,10 @@ export function SecurityPage() {
           <div className="label mb-3">Source to analyze</div>
           <Textarea rows={16} className="font-mono text-xs" value={filesJson} onChange={(event) => setFilesJson(event.target.value)} />
           <Button className="mt-3 w-full" onClick={() => void runScan()} disabled={busy}><ShieldCheck className="h-4 w-4" /> {busy ? 'Scanning…' : 'Run defensive scan'}</Button>
+          <Button className="mt-2 w-full" variant="outline" onClick={() => void runLiveScan()} disabled={busy}>Run live OSV dependency scan</Button>
           {error && <div className="mt-3 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">{error}</div>}
-          <p className="mt-4 text-[11px] leading-relaxed text-slate-600">Analysis is offline and heuristic. Dependency checks use a small explainable advisory set; run npm audit or pip-audit for authoritative CVE data.</p>
+          {advisoryNote && <div className="mt-3 rounded-lg border border-accent-400/20 bg-accent-500/10 px-3 py-2 text-xs text-accent-300">{advisoryNote}</div>}
+          <p className="mt-4 text-[11px] leading-relaxed text-slate-600">Static checks are offline heuristics. The live scan adds OSV advisories when the server enables them; version ranges are normalized on a best-effort basis and lockfiles are not resolved.</p>
         </Card>
         <div className="space-y-5">
           <Card>
