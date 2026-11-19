@@ -40,6 +40,31 @@ export function rateLimit(windowMs: number, max: number): RequestHandler {
   };
 }
 
+/**
+ * Rate limiter backed by the shared context. Uses Redis when REDIS_URL is
+ * reachable and an in-process store otherwise. Failures fail open and are
+ * logged, so a Redis outage never takes the API down.
+ */
+export function distributedRateLimit(context: AppContext): RequestHandler {
+  return async (request, response, next) => {
+    const key = `${request.ip ?? 'unknown'}:${request.path}`;
+    try {
+      const result = await context.rateLimiter.check(key);
+      response.setHeader('X-RateLimit-Limit', String(context.env.RATE_LIMIT_MAX));
+      response.setHeader('X-RateLimit-Remaining', String(result.remaining));
+      response.setHeader('X-RateLimit-Reset', String(Math.ceil(result.resetAt / 1_000)));
+      response.setHeader('X-RateLimit-Store', result.store);
+      if (!result.allowed) return next(new AppError('RATE_LIMITED', 'Too many requests'));
+      return next();
+    } catch (error) {
+      context.logger.warn('Rate limiter unavailable; allowing request', {
+        message: error instanceof Error ? error.message : String(error),
+      });
+      return next();
+    }
+  };
+}
+
 export function requireAuth(context: AppContext): RequestHandler {
   return async (request, _response, next) => {
     try {
