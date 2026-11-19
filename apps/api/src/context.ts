@@ -5,6 +5,9 @@ import type { ProjectIndex, Role } from '@make-it-ai/shared';
 import type { Env } from './config/env';
 import type { EventBus } from './lib/event-bus';
 import type { Logger } from './lib/logger';
+import type { RedisClient } from './lib/redis';
+import type { RateLimiter } from './lib/rate-limit';
+import type { TaskQueue } from './lib/task-queue';
 
 export interface Actor {
   userId: string;
@@ -21,4 +24,7 @@ export interface AppContext {
   bus: EventBus;
   logger: Logger;
   indexes: Map<string, ProjectIndex>;
+  redis: RedisClient | null;
+  rateLimiter: RateLimiter;
+  queue: TaskQueue;
 }
