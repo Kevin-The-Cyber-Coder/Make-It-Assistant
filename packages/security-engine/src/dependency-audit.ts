@@ -1,5 +1,6 @@
 import type { ProjectFile } from '@make-it-ai/shared';
 import { analyzeDependencies } from '@make-it-ai/project-intelligence';
+import { queryOsv, type OsvConfig, type OsvPackage, type OsvResult } from './osv';
 import type { FindingDraft } from './types';
 
 interface OfflineAdvisory {
@@ -38,7 +39,14 @@ function isBelow(current: string, minimum: string): boolean {
   return false;
 }
 
-export function auditDependencies(files: ProjectFile[]): FindingDraft[] {
+/** Best-effort conversion of a manifest range to an exact version OSV can query. */
+export function normalizeVersion(specifier: string): string | null {
+  const first = specifier.split('||')[0].trim();
+  const match = first.match(/\d+\.\d+(?:\.\d+)?(?:[-+][0-9A-Za-z.-]+)?/);
+  return match ? match[0] : null;
+}
+
+function offlineFindings(files: ProjectFile[]): FindingDraft[] {
   const { dependencies, ecosystem, manifests } = analyzeDependencies(files);
   const findings: FindingDraft[] = [];
 
@@ -71,4 +79,26 @@ export function auditDependencies(files: ProjectFile[]): FindingDraft[] {
   }
 
   return findings;
+}
+
+export function auditDependencies(files: ProjectFile[]): FindingDraft[] {
+  return offlineFindings(files);
+}
+
+/** Offline heuristics plus a live OSV batch query when enabled. */
+export async function auditDependenciesLive(
+  files: ProjectFile[],
+  osv?: OsvConfig,
+): Promise<{ findings: FindingDraft[]; advisory: OsvResult | null }> {
+  const findings = offlineFindings(files);
+  if (!osv?.enabled) return { findings, advisory: null };
+
+  const { dependencies, ecosystem, manifests } = analyzeDependencies(files);
+  const primaryEcosystem = ecosystem[0] ?? 'npm';
+  const packages: OsvPackage[] = Object.entries(dependencies)
+    .map(([name, specifier]) => ({ name, version: normalizeVersion(specifier) ?? '', ecosystem: primaryEcosystem }))
+    .filter((pkg) => pkg.version);
+
+  const advisory = await queryOsv(osv, packages, manifests[0]);
+  return { findings: [...findings, ...advisory.findings], advisory };
 }
