@@ -1,0 +1,11 @@
+{
+  "name": "@make-it-ai/security-engine",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "@make-it-ai/shared": "0.1.0",
+    "@make-it-ai/project-intelligence": "0.1.0"
+  }
+}
