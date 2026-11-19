@@ -29,7 +29,7 @@ export interface AgentContext {
   chat: (prompt: string, taskType: TaskType, metadata?: Record<string, unknown>) => Promise<string>;
   emit: (type: string, message: string, payload?: Record<string, unknown>) => void;
   requestApproval: (step: PlanStep, action: string, details: string) => Promise<boolean>;
-  executor?: (command: string) => Promise<ExecutionResult>;
+  executor?: (command: string, files?: ProjectFile[]) => Promise<ExecutionResult>;
   signal: AbortSignal;
   artifacts: AgentArtifact[];
 }
