@@ -1,5 +1,6 @@
 import { Router, type Request } from 'express';
 import { randomUUID } from 'node:crypto';
+import { StreamUsageTracker } from '@make-it-ai/ai-gateway';
 import {
   AppError,
   chatSchema,
@@ -165,6 +166,11 @@ export function createAIRouter(context: AppContext): Router {
     let full = '';
     let lastProvider = 'local-rules';
     let lastModel = 'rule-engine-v1';
+    const usageTracker = new StreamUsageTracker({
+      organizationId: request.actor!.organizationId,
+      userId: request.actor!.userId,
+    });
+    const promptChars = JSON.stringify(messages).length;
     try {
       for await (const chunk of context.gateway.stream({
         messages,
@@ -177,13 +183,27 @@ export function createAIRouter(context: AppContext): Router {
         full += chunk.delta;
         lastProvider = chunk.provider;
         lastModel = chunk.model;
+        usageTracker.observe(chunk);
         response.write(`event: chunk\ndata: ${JSON.stringify(chunk)}\n\n`);
       }
+      const usage = usageTracker.summary(promptChars, true);
       await persistMessage(context, conversation, 'user', input.message);
-      await persistMessage(context, conversation, 'assistant', full, { provider: lastProvider, model: lastModel });
-      response.write(`event: done\ndata: ${JSON.stringify({ conversationId: conversation.id, provider: lastProvider, model: lastModel })}\n\n`);
+      await persistMessage(context, conversation, 'assistant', full, {
+        provider: lastProvider,
+        model: lastModel,
+        tokens: usage.totalTokens,
+      });
+      await audit(context, request, 'ai.stream', 'conversation', conversation.id, {
+        provider: usage.provider,
+        model: usage.model,
+        totalTokens: usage.totalTokens,
+        estimated: usage.estimated,
+      });
+      response.write(`event: usage\ndata: ${JSON.stringify(usage)}\n\n`);
+      response.write(`event: done\ndata: ${JSON.stringify({ conversationId: conversation.id, provider: lastProvider, model: lastModel, usage })}\n\n`);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      response.write(`event: usage\ndata: ${JSON.stringify(usageTracker.summary(promptChars, false))}\n\n`);
       response.write(`event: error\ndata: ${JSON.stringify({ message })}\n\n`);
     }
     response.end();
