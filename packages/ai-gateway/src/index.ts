@@ -10,6 +10,7 @@ export * from './provider-registry';
 export * from './response-normalizer';
 export * from './stream-manager';
 export * from './token-manager';
+export * from './usage-tracker';
 export { OpenAIAdapter } from './adapters/openai';
 export { AnthropicAdapter } from './adapters/anthropic';
 export { GeminiAdapter } from './adapters/gemini';

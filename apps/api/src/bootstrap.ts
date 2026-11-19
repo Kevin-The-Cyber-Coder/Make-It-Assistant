@@ -53,6 +53,34 @@ export async function buildContext(env: Env, db: DatabaseHandle): Promise<AppCon
         createdAt: new Date().toISOString(),
       });
     },
+    onStreamUsage: (summary) => {
+      if (!summary.organizationId) return;
+      void db.repositories.modelUsage.create({
+        id: `usage_${crypto.randomUUID()}`,
+        organizationId: summary.organizationId,
+        userId: summary.userId ?? 'unknown',
+        provider: summary.provider,
+        model: summary.model,
+        promptTokens: summary.promptTokens,
+        completionTokens: summary.completionTokens,
+        latencyMs: summary.durationMs,
+        success: summary.success,
+        createdAt: new Date().toISOString(),
+      });
+      bus.publish({
+        type: 'ai:stream-usage',
+        message: summary.estimated ? 'Stream token usage estimated' : 'Stream token usage reported by provider',
+        organizationId: summary.organizationId,
+        payload: {
+          provider: summary.provider,
+          model: summary.model,
+          totalTokens: summary.totalTokens,
+          firstTokenMs: summary.firstTokenMs,
+          durationMs: summary.durationMs,
+          estimated: summary.estimated,
+        },
+      });
+    },
     onEvent: (event) => bus.publish({
       type: event.type,
       message: event.message,

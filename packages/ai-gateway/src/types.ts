@@ -76,6 +76,23 @@ export interface UsageRecord {
   userId?: string;
 }
 
+/** Aggregated accounting for one SSE stream. */
+export interface StreamUsageSummary {
+  provider: ProviderId;
+  model: string;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  chunkCount: number;
+  firstTokenMs: number;
+  durationMs: number;
+  /** True when the provider did not report usage and tokens were estimated. */
+  estimated: boolean;
+  success: boolean;
+  organizationId?: string;
+  userId?: string;
+}
+
 export interface GatewayConfig {
   apiKeys: Partial<Record<ProviderId, string>>;
   baseUrls?: Partial<Record<ProviderId, string>>;
@@ -84,6 +101,7 @@ export interface GatewayConfig {
   defaultMaxTokens: number;
   enableLocalFallback: boolean;
   onUsage?: (record: UsageRecord) => void;
+  onStreamUsage?: (summary: StreamUsageSummary) => void;
   onEvent?: (event: { type: string; message: string; metadata?: Record<string, unknown> }) => void;
 }
 

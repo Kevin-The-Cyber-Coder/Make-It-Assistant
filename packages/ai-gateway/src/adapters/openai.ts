@@ -113,7 +113,7 @@ export class OpenAIAdapter implements ProviderAdapter {
             totalTokens: (payload.usage.prompt_tokens ?? 0) + (payload.usage.completion_tokens ?? 0),
           }
         : undefined;
-      if (delta || payload.choices?.[0]?.finish_reason) {
+      if (delta || payload.choices?.[0]?.finish_reason || payload.usage) {
         yield { delta, provider: this.id, model, done: Boolean(payload.choices?.[0]?.finish_reason), usage };
       }
     }
