@@ -1,0 +1,82 @@
+export interface Project {
+  id: string;
+  name: string;
+  description: string;
+  languages: string[];
+  frameworks: string[];
+  updatedAt: string;
+}
+
+export interface AgentTask {
+  id: string;
+  objective: string;
+  status: string;
+  plan: Array<{ id: string; agent: string; title: string; description: string; status: string; requiresApproval: boolean; output?: string }>;
+  result?: string;
+  error?: string;
+  createdAt: string;
+}
+
+export interface AgentEvent {
+  id: string;
+  taskId: string;
+  type: string;
+  message: string;
+  payload?: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface ReviewFinding {
+  id: string;
+  category: string;
+  severity: string;
+  title: string;
+  description: string;
+  filePath: string;
+  line?: number;
+  suggestion?: string;
+}
+
+export interface SecurityFinding {
+  id: string;
+  severity: string;
+  category: string;
+  title: string;
+  description: string;
+  filePath?: string;
+  line?: number;
+  remediation: string;
+}
+
+export interface SecurityScan {
+  id: string;
+  filesScanned: number;
+  findings: SecurityFinding[];
+  summary: Record<string, number>;
+  createdAt: string;
+}
+
+export interface Message {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  provider?: string;
+  model?: string;
+  createdAt: string;
+}
+
+export interface Overview {
+  totalProjects: number;
+  activeAgentTasks: number;
+  completedTasks: number;
+  connectedRepositories: number;
+  recentCommits: Array<{ sha: string; message: string; author: string; date: string; url: string }>;
+  codeReviews: number;
+  securityFindings: Record<string, number>;
+  testRuns: number;
+  aiRequests: number;
+  tokensUsed: number;
+  providerUsage: Record<string, number>;
+  storageMode: string;
+  recentConversations: Array<{ id: string; title: string; updatedAt: string }>;
+}
