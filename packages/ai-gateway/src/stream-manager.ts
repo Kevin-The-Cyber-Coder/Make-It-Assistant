@@ -1,11 +1,19 @@
 import { AppError } from '@make-it-ai/shared';
 import type { ProviderRegistry } from './provider-registry';
 import type { Candidate, GatewayConfig, GenerationRequest, StreamChunk } from './types';
+import { StreamUsageTracker } from './usage-tracker';
 
 export interface StreamDependencies {
   config: GatewayConfig;
   providers: ProviderRegistry;
   candidates: (request: GenerationRequest) => Candidate[];
+}
+
+function identityOf(request: GenerationRequest): { organizationId?: string; userId?: string } {
+  return {
+    organizationId: typeof request.metadata?.organizationId === 'string' ? request.metadata.organizationId : undefined,
+    userId: typeof request.metadata?.userId === 'string' ? request.metadata.userId : undefined,
+  };
 }
 
 export async function* managedStream(
@@ -15,35 +23,46 @@ export async function* managedStream(
   const { config, providers } = dependencies;
   const candidates = dependencies.candidates(request);
   const failures: string[] = [];
+  const tracker = new StreamUsageTracker(identityOf(request));
+  const promptChars = JSON.stringify(request.messages).length;
+  let succeeded = false;
 
-  for (const candidate of candidates) {
-    const adapter = providers.get(candidate.provider);
-    if (!adapter) continue;
-    const apiKey = candidate.provider === 'local-rules' ? undefined : config.apiKeys[candidate.provider];
-    if (candidate.provider !== 'local-rules' && !apiKey) continue;
+  try {
+    for (const candidate of candidates) {
+      const adapter = providers.get(candidate.provider);
+      if (!adapter) continue;
+      const apiKey = candidate.provider === 'local-rules' ? undefined : config.apiKeys[candidate.provider];
+      if (candidate.provider !== 'local-rules' && !apiKey) continue;
 
-    let emitted = false;
-    try {
-      for await (const chunk of adapter.stream({ ...request, provider: candidate.provider, model: candidate.model }, apiKey)) {
-        emitted = true;
-        yield chunk;
-      }
-      if (emitted) return;
-      failures.push(`${candidate.provider}/${candidate.model}: empty stream`);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      failures.push(`${candidate.provider}/${candidate.model}: ${message.slice(0, 200)}`);
-      if (emitted) {
-        yield {
-          delta: `\n\n[stream interrupted: ${message.slice(0, 160)}]`,
-          provider: candidate.provider,
-          model: candidate.model,
-          done: true,
-        };
-        return;
+      let emitted = false;
+      try {
+        for await (const chunk of adapter.stream({ ...request, provider: candidate.provider, model: candidate.model }, apiKey)) {
+          emitted = true;
+          tracker.observe(chunk);
+          yield chunk;
+        }
+        if (emitted) {
+          succeeded = true;
+          return;
+        }
+        failures.push(`${candidate.provider}/${candidate.model}: empty stream`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        failures.push(`${candidate.provider}/${candidate.model}: ${message.slice(0, 200)}`);
+        if (emitted) {
+          yield {
+            delta: `\n\n[stream interrupted: ${message.slice(0, 160)}]`,
+            provider: candidate.provider,
+            model: candidate.model,
+            done: true,
+          };
+          return;
+        }
       }
     }
-  }
 
-  throw new AppError('PROVIDER_UNAVAILABLE', 'No provider could start a stream', failures);
+    throw new AppError('PROVIDER_UNAVAILABLE', 'No provider could start a stream', failures);
+  } finally {
+    config.onStreamUsage?.(tracker.summary(promptChars, succeeded));
+  }
 }
