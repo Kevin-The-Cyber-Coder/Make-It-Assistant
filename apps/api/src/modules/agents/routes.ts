@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
 import { AppError, approvalSchema, taskCreateSchema } from '@make-it-ai/shared';
 import type { ProjectFile } from '@make-it-ai/shared';
@@ -75,6 +76,35 @@ export function createAgentRouter(context: AppContext): Router {
       response.write(`event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`);
     });
     request.on('close', unsubscribe);
+  });
+
+  router.get('/queue', async (_request, response) => {
+    response.json({ mode: context.queue.mode, length: await context.queue.length() });
+  });
+
+  router.post('/queue', async (request, response) => {
+    const type = String(request.body?.type ?? '').trim();
+    const payload: unknown = request.body?.payload;
+    if (!type) throw new AppError('BAD_REQUEST', 'type is required');
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+      throw new AppError('BAD_REQUEST', 'payload must be an object');
+    }
+    const task = {
+      id: `queue_${randomUUID()}`,
+      type,
+      payload: payload as Record<string, unknown>,
+      createdAt: new Date().toISOString(),
+    };
+    await context.queue.enqueue(task);
+    await audit(context, request, 'agent.queue.enqueue', 'agent_queue_task', task.id, { type });
+    response.status(201).json({ task });
+  });
+
+  router.post('/queue/dequeue', async (request, response) => {
+    const task = await context.queue.dequeue();
+    if (!task) throw new AppError('NOT_FOUND', 'Queue is empty');
+    await audit(context, request, 'agent.queue.dequeue', 'agent_queue_task', task.id);
+    response.json({ task });
   });
 
   return router;
