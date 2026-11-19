@@ -10,13 +10,13 @@
 - Project scanning/context retrieval, defensive scanner, review/test/debug engines.
 - GitHub REST integration and defensive PR review.
 - Express API with auth, org scoping, SSE and authenticated WebSocket fanout.
+- Isolated sandbox worker with an approval-gated command allowlist and staged artifact manifests.
+- Redis-backed rate limiting and task queues with in-process fallbacks when Redis is absent.
 - React engineering console with all feature workspaces.
 - Vitest unit/integration tests, CI workflow and generated repository status report.
 
 ## Not yet implemented
 
-- Redis-backed distributed rate limiting and task queues.
-- Real isolated sandbox worker for executing generated tests or applying agent-produced file changes.
 - Browser-based GitHub OAuth flow. Current integration uses a server token or a session-only user token.
 - Live CVE ingestion for dependency auditing.
 - Streaming token-level usage accounting for SSE responses; usage is recorded for chat and completed streams at a coarse level.
