@@ -15,12 +15,12 @@
 - Browser-based GitHub OAuth with signed state and an encrypted, HTTP-only token cookie.
 - Token-level usage accounting for SSE streams with explicit estimated/provider-reported labels.
 - Container images, Compose services and Kubernetes manifests for deployment templates.
+- Optional live OSV advisory lookup layered over the offline dependency heuristics.
 - React engineering console with all feature workspaces.
 - Vitest unit/integration tests, CI workflow and generated repository status report.
 
 ## Not yet implemented
 
-- Live CVE ingestion for dependency auditing.
 - Independent security audit and load testing.
 
 ## Design decisions to revisit
