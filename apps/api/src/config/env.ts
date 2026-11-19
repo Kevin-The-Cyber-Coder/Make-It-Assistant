@@ -22,6 +22,11 @@ const schema = z
     GEMINI_BASE_URL: z.string().default('https://generativelanguage.googleapis.com/v1beta'),
     AI_FALLBACK_ORDER: z.string().default('openai,anthropic,gemini,local-rules'),
     GITHUB_TOKEN: z.string().default(''),
+    GITHUB_OAUTH_CLIENT_ID: z.string().default(''),
+    GITHUB_OAUTH_CLIENT_SECRET: z.string().default(''),
+    GITHUB_OAUTH_REDIRECT_URI: z.string().default(''),
+    GITHUB_OAUTH_SCOPES: z.string().default('repo,read:user'),
+    GITHUB_OAUTH_COOKIE_SAMESITE: z.enum(['lax', 'none']).default('lax'),
     RATE_LIMIT_WINDOW_MS: z.coerce.number().int().default(60_000),
     RATE_LIMIT_MAX: z.coerce.number().int().default(120),
     SANDBOX_URL: z.string().default(''),
@@ -35,6 +40,13 @@ const schema = z
         code: z.ZodIssueCode.custom,
         path: ['JWT_SECRET'],
         message: 'JWT_SECRET must be at least 32 characters in production',
+      });
+    }
+    if (Boolean(value.GITHUB_OAUTH_CLIENT_ID) !== Boolean(value.GITHUB_OAUTH_CLIENT_SECRET)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['GITHUB_OAUTH_CLIENT_SECRET'],
+        message: 'GITHUB_OAUTH_CLIENT_ID and GITHUB_OAUTH_CLIENT_SECRET must be set together',
       });
     }
   });

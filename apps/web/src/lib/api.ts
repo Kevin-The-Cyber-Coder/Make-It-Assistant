@@ -47,7 +47,7 @@ export async function apiRequest<T>(
   const token = getAccessToken();
   if (token) headers.set('Authorization', `Bearer ${token}`);
 
-  let response = await fetch(`${BASE_URL}${path}`, { ...init, headers });
+  let response = await fetch(`${BASE_URL}${path}`, { ...init, headers, credentials: 'include' });
 
   if (response.status === 401 && localStorage.getItem(REFRESH_KEY) && !path.includes('/auth/')) {
     const refreshToken = localStorage.getItem(REFRESH_KEY)!;
@@ -55,12 +55,13 @@ export async function apiRequest<T>(
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken }),
+      credentials: 'include',
     });
     if (refreshed.ok) {
       const body = await refreshed.json() as { tokens: { accessToken: string; refreshToken: string } };
       setTokens(body.tokens.accessToken, body.tokens.refreshToken);
       headers.set('Authorization', `Bearer ${body.tokens.accessToken}`);
-      response = await fetch(`${BASE_URL}${path}`, { ...init, headers });
+      response = await fetch(`${BASE_URL}${path}`, { ...init, headers, credentials: 'include' });
     } else {
       clearTokens();
     }

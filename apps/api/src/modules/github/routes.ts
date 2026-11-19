@@ -3,11 +3,16 @@ import { AppError, githubConnectSchema } from '@make-it-ai/shared';
 import { GitHubClient, repositoryActivity, reviewPullRequest, toRepositoryConnection } from '@make-it-ai/github-integration';
 import type { AppContext } from '../../context';
 import { audit } from '../../lib/audit';
+import { openOAuthToken, readOAuthCookie } from '../../lib/github-oauth';
 import { requireAuth, validate } from '../../middleware';
 
 function clientFor(context: AppContext, request: Parameters<typeof audit>[1]): GitHubClient {
-  const token = request.header('x-github-token') || context.env.GITHUB_TOKEN;
-  if (!token) throw new AppError('UNAUTHORIZED', 'No GitHub token configured. Send X-GitHub-Token or set GITHUB_TOKEN.');
+  const sealed = readOAuthCookie(request);
+  const session = sealed ? openOAuthToken(context.env.JWT_SECRET, sealed) : null;
+  const token = session?.accessToken || request.header('x-github-token') || context.env.GITHUB_TOKEN;
+  if (!token) {
+    throw new AppError('UNAUTHORIZED', 'No GitHub token available. Connect with GitHub OAuth, send X-GitHub-Token or set GITHUB_TOKEN.');
+  }
   return new GitHubClient(token);
 }
 

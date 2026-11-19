@@ -70,6 +70,10 @@ export class GitHubClient {
     return response.json() as Promise<T>;
   }
 
+  getAuthenticatedUser(): Promise<{ login: string; id: number }> {
+    return this.request('/user');
+  }
+
   listRepositories(perPage = 100): Promise<GitHubRepo[]> {
     return this.request<GitHubRepo[]>(`/user/repos?per_page=${perPage}&sort=updated`);
   }
