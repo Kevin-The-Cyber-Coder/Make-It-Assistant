@@ -1,24 +1,46 @@
-name: Node CI
+name: CI
 
-on: [pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
 
 jobs:
-  build:
-    timeout-minutes: 20
-
+  verify:
+    name: Install, typecheck, test, build
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v2
+      - name: Check out repository
+        uses: actions/checkout@v4
 
-      - name: Use Node.js 14
-        uses: actions/setup-node@v1
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 14.x
+          node-version: 22
+          cache: npm
 
-      - name: Install Dependencies
-        run: yarn --frozen-lockfile
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Test
-        run: yarn test
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit and integration tests
+        run: npm test
+
+      - name: Build web application
+        run: npm run build
+
+      - name: Generate real repository status report
+        run: npm run compliance -- --output docs/compliance-report.md
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: apps/web/dist
+          if-no-files-found: error
