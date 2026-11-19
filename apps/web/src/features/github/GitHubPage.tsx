@@ -48,11 +48,54 @@ export function GitHubPage() {
   const [activity, setActivity] = useState<ActivityData | null>(null);
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
+  const [oauthNotice, setOauthNotice] = useState(() => {
+    const result = new URLSearchParams(window.location.search).get('oauth');
+    return result === 'connected'
+      ? 'GitHub account connected. The token is held in an encrypted HTTP-only cookie.'
+      : result === 'error'
+        ? 'GitHub authorization was cancelled or failed.'
+        : '';
+  });
 
   const connections = useQuery({ queryKey: ['github-connections'], queryFn: () => api.get<{ repositories: Repository[] }>('/github/connections') });
+  const oauthStatus = useQuery({
+    queryKey: ['github-oauth-status'],
+    queryFn: () => api.get<{
+      configured: boolean;
+      connected: boolean;
+      login?: string;
+      scope?: string;
+      expiresAt?: number;
+    }>('/github/oauth/status'),
+  });
 
   function headers(): Record<string, string> {
     return token.trim() ? { 'X-GitHub-Token': token.trim() } : {};
+  }
+
+  async function startOAuth() {
+    setBusy(true);
+    setNotice('');
+    try {
+      const result = await api.get<{ authorizeUrl: string }>('/github/oauth/start');
+      window.location.assign(result.authorizeUrl);
+    } catch (caught) {
+      setNotice(caught instanceof Error ? caught.message : 'Could not start GitHub OAuth');
+      setBusy(false);
+    }
+  }
+
+  async function disconnectOAuth() {
+    setBusy(true);
+    try {
+      await api.post('/github/oauth/disconnect');
+      await queryClient.invalidateQueries({ queryKey: ['github-oauth-status'] });
+      setOauthNotice('GitHub account disconnected.');
+    } catch (caught) {
+      setNotice(caught instanceof Error ? caught.message : 'Could not disconnect GitHub');
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function loadRepositories() {
@@ -116,6 +159,33 @@ export function GitHubPage() {
 
       <div className="grid gap-5 xl:grid-cols-[380px_1fr]">
         <div className="space-y-5">
+          <Card className="p-5">
+            <div className="label mb-3">GitHub OAuth</div>
+            {oauthStatus.data?.connected ? (
+              <>
+                <p className="text-xs text-slate-300">
+                  Connected as <span className="font-mono text-white">{oauthStatus.data.login ?? 'unknown'}</span>
+                </p>
+                <Button className="mt-3 w-full" variant="outline" onClick={() => void disconnectOAuth()} disabled={busy}>
+                  Disconnect
+                </Button>
+              </>
+            ) : (
+              <>
+                <p className="text-[11px] leading-relaxed text-slate-600">
+                  Authorize through GitHub to use your own permissions without pasting a token here.
+                </p>
+                <Button className="mt-3 w-full" onClick={() => void startOAuth()} disabled={busy || !oauthStatus.data?.configured}>
+                  <Github className="mr-1 h-4 w-4" /> Connect with GitHub
+                </Button>
+                {!oauthStatus.data?.configured && (
+                  <p className="mt-2 text-[11px] text-slate-600">OAuth is not configured on this server; use the token field below instead.</p>
+                )}
+              </>
+            )}
+            {oauthNotice && <p className="mt-2 text-[11px] leading-relaxed text-accent-300">{oauthNotice}</p>}
+          </Card>
+
           <Card className="p-5">
             <div className="label mb-3">Access</div>
             <Input type="password" value={token} onChange={(event) => setToken(event.target.value)} placeholder="GitHub token (session only)" />
