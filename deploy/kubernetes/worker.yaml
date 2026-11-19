@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+  namespace: make-it-ai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/kevin-the-cyber-coder/make-it-assistant-worker:latest
+          ports:
+            - containerPort: 4100
+          env:
+            - name: WORKER_PORT
+              value: "4100"
+            - name: SANDBOX_BIN_DIR
+              value: /app/node_modules/.bin
+            - name: SANDBOX_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: mia-secrets
+                  key: SANDBOX_TOKEN
+                  optional: true
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 4100
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: worker
+  namespace: make-it-ai
+spec:
+  selector:
+    app: worker
+  ports:
+    - port: 4100
+      targetPort: 4100

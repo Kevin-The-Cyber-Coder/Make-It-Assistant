@@ -14,13 +14,13 @@
 - Redis-backed rate limiting and task queues with in-process fallbacks when Redis is absent.
 - Browser-based GitHub OAuth with signed state and an encrypted, HTTP-only token cookie.
 - Token-level usage accounting for SSE streams with explicit estimated/provider-reported labels.
+- Container images, Compose services and Kubernetes manifests for deployment templates.
 - React engineering console with all feature workspaces.
 - Vitest unit/integration tests, CI workflow and generated repository status report.
 
 ## Not yet implemented
 
 - Live CVE ingestion for dependency auditing.
-- Production deployment manifests (Kubernetes, Terraform or similar).
 - Independent security audit and load testing.
 
 ## Design decisions to revisit
