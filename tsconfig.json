@@ -30,6 +30,7 @@
   "include": [
     "apps/api/src/**/*.ts",
     "apps/api/tests/**/*.ts",
+    "apps/worker/src/**/*.ts",
     "apps/web/src/**/*.ts",
     "apps/web/src/**/*.tsx",
     "packages/*/src/**/*.ts",
