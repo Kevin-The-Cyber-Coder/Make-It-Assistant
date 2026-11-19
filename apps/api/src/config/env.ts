@@ -24,6 +24,10 @@ const schema = z
     GITHUB_TOKEN: z.string().default(''),
     RATE_LIMIT_WINDOW_MS: z.coerce.number().int().default(60_000),
     RATE_LIMIT_MAX: z.coerce.number().int().default(120),
+    SANDBOX_URL: z.string().default(''),
+    SANDBOX_TOKEN: z.string().default(''),
+    SANDBOX_TIMEOUT_MS: z.coerce.number().int().default(120_000),
+    SANDBOX_MAX_OUTPUT_BYTES: z.coerce.number().int().default(262_144),
   })
   .superRefine((value, context) => {
     if (value.NODE_ENV === 'production' && value.JWT_SECRET.length < 32) {
