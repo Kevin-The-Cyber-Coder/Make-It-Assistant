@@ -1,0 +1,80 @@
+import { AIGateway, type ProviderId } from '@make-it-ai/ai-gateway';
+import { Orchestrator } from '@make-it-ai/agents';
+import type { DatabaseHandle } from '@make-it-ai/database';
+import type { ProjectFile, TaskType } from '@make-it-ai/shared';
+import type { Env } from './config/env';
+import type { AppContext } from './context';
+import { EventBus } from './lib/event-bus';
+import { Logger } from './lib/logger';
+
+function parseFallbackOrder(value: string): ProviderId[] {
+  const allowed: ProviderId[] = ['openai', 'anthropic', 'gemini', 'local-rules'];
+  const parsed = value.split(',').map((part) => part.trim() as ProviderId).filter((id) => allowed.includes(id));
+  return parsed.length ? parsed : ['local-rules'];
+}
+
+export async function buildContext(env: Env, db: DatabaseHandle): Promise<AppContext> {
+  const logger = new Logger(env.LOG_LEVEL as 'debug' | 'info' | 'warn' | 'error');
+  const bus = new EventBus();
+
+  const gateway = new AIGateway({
+    apiKeys: {
+      openai: env.OPENAI_API_KEY || undefined,
+      anthropic: env.ANTHROPIC_API_KEY || undefined,
+      gemini: env.GEMINI_API_KEY || undefined,
+    },
+    baseUrls: {
+      openai: env.OPENAI_BASE_URL,
+      anthropic: env.ANTHROPIC_BASE_URL,
+      gemini: env.GEMINI_BASE_URL,
+    },
+    fallbackOrder: parseFallbackOrder(env.AI_FALLBACK_ORDER),
+    maxContextTokens: 32_000,
+    defaultMaxTokens: 2048,
+    enableLocalFallback: true,
+    onUsage: (record) => {
+      if (!record.organizationId) return;
+      void db.repositories.modelUsage.create({
+        id: `usage_${crypto.randomUUID()}`,
+        organizationId: record.organizationId,
+        userId: record.userId ?? 'unknown',
+        provider: record.provider,
+        model: record.model,
+        promptTokens: record.promptTokens,
+        completionTokens: record.completionTokens,
+        latencyMs: record.latencyMs,
+        success: record.success,
+        createdAt: new Date().toISOString(),
+      });
+    },
+    onEvent: (event) => bus.publish({
+      type: event.type,
+      message: event.message,
+      payload: event.metadata,
+    }),
+  });
+
+  const chat = async (
+    prompt: string,
+    taskType: TaskType,
+    files: ProjectFile[],
+    metadata?: Record<string, unknown>,
+  ): Promise<string> => {
+    const result = await gateway.chat({
+      messages: [{ role: 'user', content: prompt }],
+      taskType,
+      context: files.slice(0, 20),
+      metadata,
+    });
+    return result.content;
+  };
+
+  const indexes = new Map<string, import('@make-it-ai/shared').ProjectIndex>();
+  const orchestrator = new Orchestrator({
+    repositories: db.repositories,
+    chat,
+    filesForProject: async (projectId) => (projectId ? indexes.get(projectId)?.files ?? [] : []),
+  });
+
+  return { env, db, gateway, orchestrator, bus, logger, indexes };
+}

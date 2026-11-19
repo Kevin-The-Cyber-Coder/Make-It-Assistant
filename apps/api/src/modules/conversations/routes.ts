@@ -1,0 +1,62 @@
+import { Router } from 'express';
+import { randomUUID } from 'node:crypto';
+import { AppError, conversationCreateSchema, paginationSchema } from '@make-it-ai/shared';
+import type { Conversation } from '@make-it-ai/shared';
+import type { AppContext } from '../../context';
+import { requireAuth, validate } from '../../middleware';
+
+export function createConversationRouter(context: AppContext): Router {
+  const router = Router();
+  router.use(requireAuth(context));
+
+  router.get('/', async (request, response) => {
+    const query = paginationSchema.parse(request.query);
+    const conversations = await context.db.repositories.conversations.find({
+      where: { organizationId: request.actor!.organizationId },
+      sort: { field: 'updatedAt', direction: 'desc' },
+      limit: query.limit,
+      offset: query.offset,
+    });
+    response.json({ conversations });
+  });
+
+  router.post('/', validate(conversationCreateSchema), async (request, response) => {
+    const input = request.body as ReturnType<typeof conversationCreateSchema.parse>;
+    const now = new Date().toISOString();
+    const conversation: Conversation = {
+      id: `cnv_${randomUUID()}`,
+      organizationId: request.actor!.organizationId,
+      userId: request.actor!.userId,
+      projectId: input.projectId,
+      title: input.title,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await context.db.repositories.conversations.create(conversation);
+    response.status(201).json({ conversation });
+  });
+
+  router.get('/:id/messages', async (request, response) => {
+    const conversation = await context.db.repositories.conversations.findById(request.params.id);
+    if (!conversation || conversation.organizationId !== request.actor!.organizationId) {
+      throw new AppError('NOT_FOUND', 'Conversation not found');
+    }
+    const messages = await context.db.repositories.messages.find({
+      where: { organizationId: request.actor!.organizationId, conversationId: conversation.id },
+      sort: { field: 'createdAt', direction: 'asc' },
+      limit: 500,
+    });
+    response.json({ conversation, messages });
+  });
+
+  router.delete('/:id', async (request, response) => {
+    const conversation = await context.db.repositories.conversations.findById(request.params.id);
+    if (!conversation || conversation.organizationId !== request.actor!.organizationId) {
+      throw new AppError('NOT_FOUND', 'Conversation not found');
+    }
+    await context.db.repositories.conversations.delete(conversation.id);
+    response.json({ success: true });
+  });
+
+  return router;
+}
