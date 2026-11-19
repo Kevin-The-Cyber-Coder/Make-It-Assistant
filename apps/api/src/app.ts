@@ -11,6 +11,7 @@ import { createAgentRouter } from './modules/agents/routes';
 import { createSecurityRouter } from './modules/security/routes';
 import { createDevRouter } from './modules/dev/routes';
 import { createGithubRouter } from './modules/github/routes';
+import { createGithubOAuthRouter } from './modules/github/oauth';
 import { createAnalyticsRouter } from './modules/analytics/routes';
 
 export function createApp(context: AppContext): Express {
@@ -48,6 +49,8 @@ export function createApp(context: AppContext): Express {
   api.use('/agents', createAgentRouter(context));
   api.use('/security', createSecurityRouter(context));
   api.use('/dev', createDevRouter(context));
+  // Mounted first so the public OAuth callback is reachable without a bearer token.
+  api.use('/github/oauth', createGithubOAuthRouter(context));
   api.use('/github', createGithubRouter(context));
   api.use('/analytics', createAnalyticsRouter(context));
   app.use(context.env.API_PREFIX, api);
