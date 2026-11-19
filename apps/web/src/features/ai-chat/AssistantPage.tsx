@@ -23,6 +23,7 @@ export function AssistantPage() {
   const [model, setModel] = useState('');
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState('');
+  const [usageLabel, setUsageLabel] = useState('');
   const bottom = useRef<HTMLDivElement>(null);
 
   const providers = useQuery({ queryKey: ['providers'], queryFn: () => api.get<{ providers: ProviderInfo[] }>('/ai/providers') });
@@ -47,6 +48,7 @@ export function AssistantPage() {
     if (!text || busy) return;
     setBusy(true);
     setStatus('Streaming response…');
+    setUsageLabel('');
     const userMessage: Message = { id: crypto.randomUUID(), role: 'user', content: text, createdAt: new Date().toISOString() };
     const assistantId = crypto.randomUUID();
     setMessages((current) => [
@@ -82,9 +84,19 @@ export function AssistantPage() {
           const event = block.match(/^event:\s*(.+)$/m)?.[1] ?? 'message';
           const data = block.match(/^data:\s*(.+)$/m)?.[1];
           if (data) {
-            const payload = JSON.parse(data) as { delta?: string; conversationId?: string; message?: string };
+            const payload = JSON.parse(data) as {
+              delta?: string;
+              conversationId?: string;
+              message?: string;
+              totalTokens?: number;
+              estimated?: boolean;
+              firstTokenMs?: number;
+            };
             if (event === 'chunk' && payload.delta) {
               setMessages((current) => current.map((message) => message.id === assistantId ? { ...message, content: message.content + payload.delta! } : message));
+            }
+            if (event === 'usage' && typeof payload.totalTokens === 'number') {
+              setUsageLabel(`${payload.totalTokens} tokens${payload.estimated ? ' (estimated)' : ''} · first token ${payload.firstTokenMs ?? 0} ms`);
             }
             if (event === 'done' && payload.conversationId) {
               setConversationId(payload.conversationId);
@@ -155,7 +167,7 @@ export function AssistantPage() {
               <Button onClick={() => void send()} disabled={busy || !input.trim()}><CornerDownLeft className="h-4 w-4" /> {busy ? 'Generating…' : 'Send'}</Button>
               <Button variant="outline" size="sm" onClick={() => void enhance()} disabled={!input.trim()}>Enhance prompt</Button>
               {conversationId && <Badge className="font-mono">{conversationId.slice(-8)}</Badge>}
-              <span className="ml-auto text-[11px] text-slate-600">{status || 'Ready'}</span>
+              <span className="ml-auto text-[11px] text-slate-600">{usageLabel ? `${usageLabel} · ` : ''}{status || 'Ready'}</span>
             </div>
           </div>
         </Card>
