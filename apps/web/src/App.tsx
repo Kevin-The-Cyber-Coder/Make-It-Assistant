@@ -14,6 +14,7 @@ import { ReviewPage } from '@/features/review/ReviewPage';
 import { TestingPage } from '@/features/testing/TestingPage';
 import { GitHubPage } from '@/features/github/GitHubPage';
 import { AnalyticsPage } from '@/features/analytics/AnalyticsPage';
+import { AuditLogPage } from '@/features/audit/AuditLogPage';
 import { SettingsPage } from '@/features/settings/SettingsPage';
 
 function Protected({ children }: { children: ReactNode }) {
@@ -36,6 +37,7 @@ export function App() {
         <Route path="testing" element={<TestingPage />} />
         <Route path="github" element={<GitHubPage />} />
         <Route path="analytics" element={<AnalyticsPage />} />
+        <Route path="audit" element={<AuditLogPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
