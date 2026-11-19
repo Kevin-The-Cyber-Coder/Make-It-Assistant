@@ -1,217 +1,132 @@
-# Changesets Release Action
+# MAKE IT AI
 
-This action for [Changesets](https://github.com/atlassian/changesets) creates a pull request with all of the package versions updated and changelogs updated and when there are new changesets on [your configured `baseBranch`](https://github.com/changesets/changesets/blob/main/docs/config-file-options.md#basebranch-git-branch-name), the PR will be updated. When you're ready, you can merge the pull request and you can either publish the packages to npm manually or setup the action to do it for you.
+MAKE IT AI is an AI software-engineering and defensive-cybersecurity workspace built as an npm workspaces monorepo. It provides a typed API, a React engineering console, provider-agnostic AI routing, multi-agent orchestration, defensive scanning, GitHub integration and real persistence adapters.
 
-## Usage
+This repository was rebuilt in place from a fork of the Changesets Release GitHub Action. The original action is preserved, unchanged in behavior, under [`tools/changesets-action`](tools/changesets-action).
 
-### Inputs
+## What is implemented
 
-- publish - The command to use to build and publish packages
-- version - The command to update version, edit CHANGELOG, read and delete changesets. Default to `changeset version` if not provided
-- commit - The commit message to use. Default to `Version Packages`
-- title - The pull request title. Default to `Version Packages`
-- setupGitUser - Sets up the git user for commits as `"github-actions[bot]"`. Default to `true`
-- createGithubReleases - A boolean value to indicate whether to create Github releases after `publish` or not. Default to `true`
-- cwd - Changes node's `process.cwd()` if the project is not located on the root. Default to `process.cwd()`
+| Area | Status | Notes |
+| --- | --- | --- |
+| API | Implemented | Express 4, versioned `/api/v1`, JWT auth, scrypt password hashing, rotating refresh tokens, org-scoped repositories, RBAC helpers, audit logs, rate limits and security headers. |
+| AI Gateway | Implemented | OpenAI, Anthropic and Gemini adapters over `fetch`, model routing, capability registry, fallback chain, context manager, token manager, response normalization, evaluation hooks and SSE streaming. Offline `local-rules` adapter is explicitly labeled. |
+| Agents | Implemented | Planner, specialist agents, workflow engine, approval checkpoints, cancellation, tool registry, task/event persistence and WebSocket fanout. Sensitive steps cannot proceed without explicit approval unless `autoApprove` is set. |
+| Project intelligence | Implemented | File scanning, language/dependency detection, indexed context and relevance-based context retrieval. |
+| Security engine | Implemented | Offline secret detection, SAST rules, insecure-configuration checks, dependency heuristics, OWASP reference catalog and severity summaries. |
+| Developer engine | Implemented | Rule-based code review, test-skeleton generation and stack-trace diagnosis. No shell commands are executed. |
+| GitHub integration | Implemented | REST client for repositories, commits, pulls, issues and contributors; connect flow; PR review using the same defensive engine plus optional AI summary. |
+| Web console | Implemented | React/Vite/Tailwind workspace with dashboard, streaming assistant, agent console, code studio, projects, security, review, testing, debug, GitHub, analytics and settings pages. |
+| Persistence | Implemented | In-memory, JSON-file and MongoDB adapters selected by environment configuration. |
+| Tests | Implemented | Vitest unit and API integration tests run with `npm test`. |
+| CI | Implemented | GitHub Actions install/typecheck/test/build workflow and PR status report workflow. |
 
-### Outputs
+## What is deliberately not claimed
 
-- published - A boolean value to indicate whether a publishing is happened or not
-- publishedPackages - A JSON array to present the published packages. The format is `[{"name": "@xx/xx", "version": "1.2.0"}, {"name": "@xx/xy", "version": "0.8.9"}]`
+- No external AI provider is used unless a key is configured server-side. Responses from `local-rules` are clearly labeled offline heuristic output.
+- Test execution is not performed by the testing lab. It generates skeletons and returns `status: skipped` unless an approved isolated sandbox executor is attached.
+- Dependency findings are offline heuristics. They are not an authoritative CVE feed; use `npm audit`, `pip-audit`, or equivalent scanners for authoritative data.
+- `REDIS_URL` is documented and included in Docker Compose, but Redis is not yet wired into runtime behavior.
+- No project license is declared. Third-party notices inside preserved vendor code remain intact.
 
-### Example workflow:
+## Repository layout
 
-#### Without Publishing
-
-Create a file at `.github/workflows/release.yml` with the following content.
-
-```yml
-name: Release
-
-on:
-  push:
-    branches:
-      - main
-
-concurrency: ${{ github.workflow }}-${{ github.ref }}
-
-jobs:
-  release:
-    name: Release
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v2
-
-      - name: Setup Node.js 12.x
-        uses: actions/setup-node@v2
-        with:
-          node-version: 12.x
-
-      - name: Install Dependencies
-        run: yarn
-
-      - name: Create Release Pull Request
-        uses: changesets/action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```text
+apps/
+  api/                     Express API and WebSocket server
+  web/                     React/Vite engineering console
+packages/
+  shared/                  Domain types, Zod schemas, errors, event constants
+  database/                Repository interfaces and memory/file/Mongo adapters
+  ai-gateway/              Routing, adapters, context, fallback and evaluation
+  agents/                  Planner, specialists, workflow and approvals
+  project-intelligence/    Scanning, indexing and context retrieval
+  security-engine/         Defensive static analysis and OWASP education
+  dev-engine/              Code review, test generation and debugging
+  github-integration/      GitHub REST client and PR review
+tools/
+  changesets-action/       Preserved original Changesets action
+scripts/
+  compliance-report.mjs    Generates a real repository status report
+.github/workflows/         CI and PR status workflows
 ```
 
-#### With Publishing
+## Quick start
 
-Before you can setup this action with publishing, you'll need to have an [npm token](https://docs.npmjs.com/creating-and-viewing-authentication-tokens) that can publish the packages in the repo you're setting up the action for and doesn't have 2FA on publish enabled ([2FA on auth can be enabled](https://docs.npmjs.com/about-two-factor-authentication)). You'll also need to [add it as a secret on your GitHub repo](https://help.github.com/en/articles/virtual-environments-for-github-actions#creating-and-using-secrets-encrypted-variables) with the name `NPM_TOKEN`. Once you've done that, you can create a file at `.github/workflows/release.yml` with the following content.
+Requirements: Node.js 20 or newer (Node 22 recommended) and npm.
 
-```yml
-name: Release
-
-on:
-  push:
-    branches:
-      - main
-
-concurrency: ${{ github.workflow }}-${{ github.ref }}
-
-jobs:
-  release:
-    name: Release
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v2
-
-      - name: Setup Node.js 12.x
-        uses: actions/setup-node@v2
-        with:
-          node-version: 12.x
-
-      - name: Install Dependencies
-        run: yarn
-
-      - name: Create Release Pull Request or Publish to npm
-        id: changesets
-        uses: changesets/action@v1
-        with:
-          # This expects you to have a script called release which does a build for your packages and calls changeset publish
-          publish: yarn release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Send a Slack notification if a publish happens
-        if: steps.changesets.outputs.published == 'true'
-        # You can do something when a publish happens.
-        run: my-slack-bot send-notification --message "A new version of ${GITHUB_REPOSITORY} was published!"
+```bash
+npm install
+cp .env.example .env
+npm run dev
 ```
 
-By default the GitHub Action creates a `.npmrc` file with the following content:
+The API listens on `http://localhost:4000` and the web console on `http://localhost:5173` when both dev processes are started. The root `dev` script starts the API; use `npm run dev:web` in a second terminal for the web app.
 
-```
-//registry.npmjs.org/:_authToken=${process.env.NPM_TOKEN}
-```
+To use MongoDB instead of JSON-file storage, set `MONGODB_URI` and start the local services:
 
-However, if a `.npmrc` file is found, the GitHub Action does not recreate the file. This is useful if you need to configure the `.npmrc` file on your own.
-For example, you can add a step before running the Changesets GitHub Action:
-
-```yml
-- name: Creating .npmrc
-  run: |
-    cat << EOF > "$HOME/.npmrc"
-      //registry.npmjs.org/:_authToken=$NPM_TOKEN
-    EOF
-  env:
-    NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+```bash
+docker compose up -d mongo redis
 ```
 
-#### Custom Publishing
+Leave `MONGODB_URI` empty for the default JSON-file repository under `.data/`.
 
-If you want to hook into when publishing should occur but have your own publishing functionality you can utilize the `hasChangesets` output.
+## Environment
 
-Note that you might need to account for things already being published in your script because a commit without any new changesets can always land on your base branch after a successful publish. In such a case you need to figure out on your own how to skip over the actual publishing logic or handle errors gracefully as most package registries won't allow you to publish over already published version.
+See [`.env.example`](.env.example) for the full contract. Important variables:
 
-```yml
-name: Release
+- `JWT_SECRET`: must be at least 32 characters in production.
+- `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`: server-side provider credentials. Never commit real values.
+- `AI_FALLBACK_ORDER`: provider priority; `local-rules` is the last safe fallback.
+- `MONGODB_URI`: when set, selects MongoDB; otherwise JSON-file storage is used.
+- `GITHUB_TOKEN`: optional server-wide GitHub token. The web UI also accepts a session-only token.
+- `CLIENT_ORIGIN`: comma-separated exact origins allowed by CORS.
 
-on:
-  push:
-    branches:
-      - main
+## Verification
 
-jobs:
-  release:
-    name: Release
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v2
-
-      - name: Setup Node.js 12.x
-        uses: actions/setup-node@v2
-        with:
-          node-version: 12.x
-
-      - name: Install Dependencies
-        run: yarn
-
-      - name: Create Release Pull Request or Publish to npm
-        id: changesets
-        uses: changesets/action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Publish
-        if: steps.changesets.outputs.hasChangesets == 'false'
-        # You can do something when a publish should happen.
-        run: yarn publish
+```bash
+npm run typecheck
+npm test
+npm run build
+npm run compliance
 ```
 
-#### With version script
+`npm run compliance` prints a generated report based on actual Git history, tracked files and environment presence. It never prints secret values and does not claim review approval or external validation.
 
-If you need to add additional logic to the version command, you can do so by using a version script.
+## API overview
 
-If the version script is present, this action will run that script instead of `changeset version`, so please make sure that your script calls `changeset version` at some point. All the changes made by the script will be included in the PR.
+- `POST /api/v1/auth/register`, `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh`, `GET /api/v1/auth/me`
+- `GET|POST /api/v1/projects`, `POST /api/v1/projects/:id/index`
+- `GET|POST /api/v1/conversations`, `GET /api/v1/conversations/:id/messages`
+- `POST /api/v1/ai/chat`, `POST /api/v1/ai/stream`, `GET /api/v1/ai/providers`
+- `GET|POST /api/v1/agents/tasks`, `POST /api/v1/agents/tasks/:id/approve`, `POST /api/v1/agents/tasks/:id/cancel`
+- `POST /api/v1/security/scan`, `GET /api/v1/security/owasp`
+- `POST /api/v1/dev/code/review`, `POST /api/v1/dev/testing/run`, `POST /api/v1/dev/debug/analyze`
+- `GET /api/v1/github/connections`, `GET /api/v1/github/repos`, `POST /api/v1/github/connect`
+- `GET /api/v1/analytics/overview`, `GET /api/v1/analytics/usage`
+- `GET /healthz`, `/ws?token=<access-token>`
 
-```yml
-name: Release
+Full request contracts are defined in [`packages/shared/src/schemas.ts`](packages/shared/src/schemas.ts) and documented in [`docs/API.md`](docs/API.md).
 
-on:
-  push:
-    branches:
-      - main
+## Security model
 
-concurrency: ${{ github.workflow }}-${{ github.ref }}
+- Organization isolation is enforced in repositories and in middleware.
+- WebSocket upgrade requires a valid access-token query parameter and org-scoped subscriptions.
+- Request bodies are validated with Zod before reaching handlers.
+- Passwords use scrypt with per-user salts; refresh tokens are hashed before storage.
+- File content from repositories is treated as untrusted data, never as instructions.
+- Sensitive agent steps require explicit human approval unless explicitly auto-approved.
+- Code execution is not enabled by default; there is no arbitrary command endpoint.
+- Security scanning is defensive and intended for authorized systems only.
 
-jobs:
-  release:
-    name: Release
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v2
+## Documentation
 
-      - name: Setup Node.js 12.x
-        uses: actions/setup-node@v2
-        with:
-          node-version: 12.x
+- [Architecture](docs/ARCHITECTURE.md)
+- [API contracts](docs/API.md)
+- [Local setup and operations](docs/LOCAL_SETUP.md)
+- [Security posture](docs/SECURITY.md)
+- [Roadmap and known gaps](docs/ROADMAP.md)
+- [Preserved legacy action](tools/changesets-action/README.md)
 
-      - name: Install Dependencies
-        run: yarn
+## License
 
-      - name: Create Release Pull Request
-        uses: changesets/action@v1
-        with:
-          # this expects you to have a npm script called version that runs some logic and then calls `changeset version`.
-          version: yarn version
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-```
-
-#### With Yarn 2 / Plug'n'Play
-
-If you are using [Yarn Plug'n'Play](https://yarnpkg.com/features/pnp), you should use a custom `version` command so that the action can resolve the `changeset` CLI:
-
-```yaml
-- uses: changesets/action@v1
-  with:
-    version: yarn changeset version
-    ...
-```
+No project license is declared at the repository root. Third-party notices in preserved upstream files remain intact.
