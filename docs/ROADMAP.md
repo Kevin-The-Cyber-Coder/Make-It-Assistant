@@ -13,13 +13,13 @@
 - Isolated sandbox worker with an approval-gated command allowlist and staged artifact manifests.
 - Redis-backed rate limiting and task queues with in-process fallbacks when Redis is absent.
 - Browser-based GitHub OAuth with signed state and an encrypted, HTTP-only token cookie.
+- Token-level usage accounting for SSE streams with explicit estimated/provider-reported labels.
 - React engineering console with all feature workspaces.
 - Vitest unit/integration tests, CI workflow and generated repository status report.
 
 ## Not yet implemented
 
 - Live CVE ingestion for dependency auditing.
-- Streaming token-level usage accounting for SSE responses; usage is recorded for chat and completed streams at a coarse level.
 - Production deployment manifests (Kubernetes, Terraform or similar).
 - Independent security audit and load testing.
 
