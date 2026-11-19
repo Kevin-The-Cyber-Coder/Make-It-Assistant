@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  @apply bg-ink-950 text-slate-200 antialiased;
+  background-image: radial-gradient(circle at 15% -10%, rgba(91,124,250,0.12), transparent 35%),
+    radial-gradient(circle at 85% 0%, rgba(61,220,151,0.06), transparent 30%);
+}
+
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #222c49; border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: #34406a; background-clip: padding-box; }
+
+@layer components {
+  .panel { @apply rounded-2xl border border-white/5 bg-ink-900/80 shadow-panel backdrop-blur; }
+  .panel-header { @apply flex items-center justify-between border-b border-white/5 px-5 py-4; }
+  .label { @apply text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500; }
+  .muted { @apply text-sm text-slate-400; }
+  .grid-bg {
+    background-image: linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+}
+
+.monaco-editor .margin { background-color: #0c1120 !important; }
