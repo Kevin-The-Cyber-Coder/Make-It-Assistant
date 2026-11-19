@@ -1,3 +1,15 @@
+node_modules/
+.env
+.env.*
+!.env.example
+coverage/
+*.tsbuildinfo
+dist/
+!tools/changesets-action/dist/
+!tools/changesets-action/dist/**
+.data/
+.vite/
 .parcel-cache
 .cache
 *.log
+.DS_Store
