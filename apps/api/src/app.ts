@@ -2,7 +2,7 @@ import express, { Router } from 'express';
 import cors from 'cors';
 import type { Express } from 'express';
 import type { AppContext } from './context';
-import { errorHandler, notFound, rateLimit, requestId, securityHeaders } from './middleware';
+import { distributedRateLimit, errorHandler, notFound, requestId, securityHeaders } from './middleware';
 import { createAuthRouter } from './modules/auth/routes';
 import { createProjectRouter } from './modules/projects/routes';
 import { createConversationRouter } from './modules/conversations/routes';
@@ -25,13 +25,16 @@ export function createApp(context: AppContext): Express {
     credentials: true,
     exposedHeaders: ['X-Request-Id'],
   }));
-  app.use(rateLimit(context.env.RATE_LIMIT_WINDOW_MS, context.env.RATE_LIMIT_MAX));
+  app.use(distributedRateLimit(context));
 
   app.get('/healthz', (_request, response) => {
     response.json({
       status: 'ok',
       service: 'make-it-ai-api',
       storage: context.db.mode,
+      redis: context.redis ? 'connected' : 'disabled',
+      rateLimitStore: context.rateLimiter.mode,
+      queueStore: context.queue.mode,
       providers: context.gateway.listProviders().filter((provider) => provider.configured).map((provider) => provider.id),
       timestamp: new Date().toISOString(),
     });

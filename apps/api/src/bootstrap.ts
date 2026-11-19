@@ -6,6 +6,9 @@ import type { Env } from './config/env';
 import type { AppContext } from './context';
 import { EventBus } from './lib/event-bus';
 import { Logger } from './lib/logger';
+import { connectRedis } from './lib/redis';
+import { createRateLimiter } from './lib/rate-limit';
+import { createTaskQueue } from './lib/task-queue';
 
 function parseFallbackOrder(value: string): ProviderId[] {
   const allowed: ProviderId[] = ['openai', 'anthropic', 'gemini', 'local-rules'];
@@ -16,6 +19,9 @@ function parseFallbackOrder(value: string): ProviderId[] {
 export async function buildContext(env: Env, db: DatabaseHandle): Promise<AppContext> {
   const logger = new Logger(env.LOG_LEVEL as 'debug' | 'info' | 'warn' | 'error');
   const bus = new EventBus();
+  const redis = await connectRedis(env.REDIS_URL, logger);
+  const rateLimiter = createRateLimiter(redis, env.RATE_LIMIT_WINDOW_MS, env.RATE_LIMIT_MAX);
+  const queue = createTaskQueue(redis);
 
   const gateway = new AIGateway({
     apiKeys: {
@@ -103,5 +109,5 @@ export async function buildContext(env: Env, db: DatabaseHandle): Promise<AppCon
     executor: sandboxExecutor,
   });
 
-  return { env, db, gateway, orchestrator, bus, logger, indexes };
+  return { env, db, gateway, orchestrator, bus, logger, indexes, redis, rateLimiter, queue };
 }

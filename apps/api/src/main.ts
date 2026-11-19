@@ -56,7 +56,16 @@ async function main(): Promise<void> {
   const shutdown = () => {
     websocket.close();
     server.close(() => {
-      void db.close().finally(() => process.exit(0));
+      void (async () => {
+        if (context.redis) {
+          try {
+            await context.redis.quit();
+          } catch {
+            context.redis.disconnect();
+          }
+        }
+        await db.close();
+      })().finally(() => process.exit(0));
     });
   };
   process.on('SIGINT', shutdown);
