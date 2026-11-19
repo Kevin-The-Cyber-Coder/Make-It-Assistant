@@ -96,7 +96,7 @@ export const TOOLS: ToolDefinition[] = [
           command,
         };
       }
-      const result = await context.executor(command);
+      const result = await context.executor(command, context.files);
       return { executed: true, command, ...result };
     },
   },

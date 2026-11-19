@@ -1,0 +1,17 @@
+{
+  "name": "@make-it-ai/worker",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/main.ts",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts"
+  },
+  "dependencies": {
+    "@make-it-ai/shared": "0.1.0",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2"
+  }
+}

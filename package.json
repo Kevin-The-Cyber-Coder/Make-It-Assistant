@@ -13,7 +13,9 @@
   "scripts": {
     "dev": "npm run dev --workspace @make-it-ai/api",
     "dev:web": "npm run dev --workspace @make-it-ai/web",
+    "dev:worker": "npm run dev --workspace @make-it-ai/worker",
     "start": "npm run start --workspace @make-it-ai/api",
+    "start:worker": "npm run start --workspace @make-it-ai/worker",
     "build": "npm run build --workspace @make-it-ai/web",
     "test": "vitest run",
     "test:watch": "vitest",

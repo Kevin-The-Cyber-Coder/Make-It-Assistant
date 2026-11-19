@@ -17,6 +17,18 @@ services:
     volumes:
       - redis-data:/data
 
+  worker:
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+    restart: unless-stopped
+    environment:
+      WORKER_PORT: 4100
+      SANDBOX_TOKEN: ${SANDBOX_TOKEN:-}
+      SANDBOX_BIN_DIR: /app/node_modules/.bin
+    ports:
+      - "4100:4100"
+
 volumes:
   mongo-data:
   redis-data:

@@ -258,3 +258,29 @@ export interface ProjectIndex {
   dependencies: Record<string, string>;
   indexedAt: ISODate;
 }
+
+/** Request sent from the API to an isolated sandbox worker after human approval. */
+export interface SandboxExecuteRequest {
+  command: string;
+  files: ProjectFile[];
+  approved: boolean;
+  timeoutMs?: number;
+}
+
+export interface SandboxExecuteResult {
+  executed: boolean;
+  exitCode: number;
+  output: string;
+  durationMs: number;
+  reason?: string;
+}
+
+export interface SandboxStageRequest {
+  artifacts: Array<{ path: string; content: string }>;
+}
+
+export interface SandboxStageResult {
+  staged: Array<{ path: string; bytes: number; sha256: string }>;
+  applied: false;
+  workspace: string;
+}
