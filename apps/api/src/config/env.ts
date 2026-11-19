@@ -33,6 +33,10 @@ const schema = z
     SANDBOX_TOKEN: z.string().default(''),
     SANDBOX_TIMEOUT_MS: z.coerce.number().int().default(120_000),
     SANDBOX_MAX_OUTPUT_BYTES: z.coerce.number().int().default(262_144),
+    OSV_ENABLED: z.enum(['true', 'false']).default('false').transform((value) => value === 'true'),
+    OSV_API_URL: z.string().default('https://api.osv.dev'),
+    OSV_TIMEOUT_MS: z.coerce.number().int().default(8_000),
+    OSV_MAX_PACKAGES: z.coerce.number().int().default(100),
   })
   .superRefine((value, context) => {
     if (value.NODE_ENV === 'production' && value.JWT_SECRET.length < 32) {

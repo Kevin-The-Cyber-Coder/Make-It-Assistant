@@ -1,25 +1,19 @@
 import type { ProjectFile, SecurityFinding, SecurityScan, Severity } from '@make-it-ai/shared';
 import { analyzeConfiguration } from './config-analyzer';
-import { auditDependencies } from './dependency-audit';
+import { auditDependencies, auditDependenciesLive } from './dependency-audit';
+import type { OsvConfig, OsvResult } from './osv';
 import { detectSecrets } from './secret-detector';
 import { runSast } from './sast-rules';
 import type { FindingDraft } from './types';
 
 const SEVERITIES: Severity[] = ['critical', 'high', 'medium', 'low', 'info'];
 
-export function scanSource(
+function finalizeScan(
   organizationId: string,
-  files: ProjectFile[],
-  options: { scanId?: string; projectId?: string } = {},
+  drafts: FindingDraft[],
+  options: { scanId?: string; projectId?: string; filesScanned: number },
 ): SecurityScan {
   const scanId = options.scanId ?? crypto.randomUUID();
-  const drafts: FindingDraft[] = [
-    ...detectSecrets(files),
-    ...runSast(files),
-    ...analyzeConfiguration(files),
-    ...auditDependencies(files),
-  ];
-
   const seen = new Set<string>();
   const findings: SecurityFinding[] = drafts
     .filter((draft) => {
@@ -47,11 +41,44 @@ export function scanSource(
     organizationId,
     projectId: options.projectId,
     status: 'completed',
-    filesScanned: files.length,
+    filesScanned: options.filesScanned,
     findings,
     summary,
     createdAt: new Date().toISOString(),
     completedAt: new Date().toISOString(),
+  };
+}
+
+export function scanSource(
+  organizationId: string,
+  files: ProjectFile[],
+  options: { scanId?: string; projectId?: string } = {},
+): SecurityScan {
+  const drafts: FindingDraft[] = [
+    ...detectSecrets(files),
+    ...runSast(files),
+    ...analyzeConfiguration(files),
+    ...auditDependencies(files),
+  ];
+  return finalizeScan(organizationId, drafts, { ...options, filesScanned: files.length });
+}
+
+/** Async variant that adds live OSV advisories when configured. */
+export async function scanSourceLive(
+  organizationId: string,
+  files: ProjectFile[],
+  options: { scanId?: string; projectId?: string; osv?: OsvConfig } = {},
+): Promise<{ scan: SecurityScan; advisory: OsvResult | null }> {
+  const { findings: dependencyFindings, advisory } = await auditDependenciesLive(files, options.osv);
+  const drafts: FindingDraft[] = [
+    ...detectSecrets(files),
+    ...runSast(files),
+    ...analyzeConfiguration(files),
+    ...dependencyFindings,
+  ];
+  return {
+    scan: finalizeScan(organizationId, drafts, { ...options, filesScanned: files.length }),
+    advisory,
   };
 }
 
