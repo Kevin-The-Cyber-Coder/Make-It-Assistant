@@ -1,7 +1,7 @@
 import { AIGateway, type ProviderId } from '@make-it-ai/ai-gateway';
-import { Orchestrator } from '@make-it-ai/agents';
+import { Orchestrator, type ExecutionResult } from '@make-it-ai/agents';
 import type { DatabaseHandle } from '@make-it-ai/database';
-import type { ProjectFile, TaskType } from '@make-it-ai/shared';
+import type { ProjectFile, SandboxExecuteResult, TaskType } from '@make-it-ai/shared';
 import type { Env } from './config/env';
 import type { AppContext } from './context';
 import { EventBus } from './lib/event-bus';
@@ -69,11 +69,38 @@ export async function buildContext(env: Env, db: DatabaseHandle): Promise<AppCon
     return result.content;
   };
 
+  const sandboxExecutor: ((command: string, files?: ProjectFile[]) => Promise<ExecutionResult>) | undefined = env.SANDBOX_URL
+    ? async (command, files = []) => {
+        const baseUrl = env.SANDBOX_URL.replace(/\/$/, '');
+        const response = await fetch(`${baseUrl}/execute`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Sandbox-Token': env.SANDBOX_TOKEN,
+          },
+          body: JSON.stringify({
+            command,
+            files,
+            approved: true,
+            timeoutMs: env.SANDBOX_TIMEOUT_MS,
+          }),
+          signal: AbortSignal.timeout(env.SANDBOX_TIMEOUT_MS + 5_000),
+        });
+        if (!response.ok) {
+          const detail = (await response.text()).slice(0, 300);
+          throw new Error(`Sandbox execution failed with ${response.status}: ${detail}`);
+        }
+        const result = await response.json() as SandboxExecuteResult;
+        return { exitCode: result.exitCode, output: result.output, durationMs: result.durationMs };
+      }
+    : undefined;
+
   const indexes = new Map<string, import('@make-it-ai/shared').ProjectIndex>();
   const orchestrator = new Orchestrator({
     repositories: db.repositories,
     chat,
     filesForProject: async (projectId) => (projectId ? indexes.get(projectId)?.files ?? [] : []),
+    executor: sandboxExecutor,
   });
 
   return { env, db, gateway, orchestrator, bus, logger, indexes };
