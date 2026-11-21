@@ -4,4 +4,7 @@
 
 ### `GET /api/v1/dev/reviews`
 
-Supports optional `projectId` query parameter to filter reviews for a specific project within the authenticated organization.
+Supports optional query parameters:
+
+- `projectId` - filter reviews for a specific project
+- `q` - filter reviews by title or summary text
