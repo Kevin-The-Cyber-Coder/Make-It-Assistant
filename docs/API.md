@@ -1,6 +1,6 @@
 # API contracts
 
-All application routes are mounted under `/api/v1`. `GET /healthz` is unversioned. Every route except auth registration/login/refresh and health requires `Authorization: Bearer <access-token>`.
+All application routes are mounted under `/api/v1`. `GET /healthz` and `GET /readyz` are unversioned. Every route except auth registration/login/refresh and health/readiness requires `Authorization: Bearer <access-token>`.
 
 ## Response envelope
 
