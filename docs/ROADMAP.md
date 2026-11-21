@@ -18,6 +18,7 @@
 - Optional live OSV advisory lookup layered over the offline dependency heuristics.
 - Organization-scoped audit log query API and console viewer with filters, summaries and export.
 - Organization-scoped global search API wired into the console command palette.
+- Authenticated system status endpoint and Settings runtime diagnostics panel.
 - React engineering console with all feature workspaces.
 - Vitest unit/integration tests, CI workflow and generated repository status report.
 

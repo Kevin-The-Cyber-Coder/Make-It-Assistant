@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { CheckCircle2, KeyRound, LogOut, Server, ShieldCheck } from 'lucide-react';
+import { Activity, CheckCircle2, Database, KeyRound, LogOut, Server, ShieldCheck } from 'lucide-react';
 import { api, clearTokens, getAccessToken } from '@/lib/api';
+import type { SystemStatus } from '@/lib/types';
 import { Badge, Button, Card, EmptyState, Input, PageHeader, Spinner } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
@@ -38,6 +39,11 @@ export function SettingsPage() {
       return response.json() as Promise<Health>;
     },
     refetchInterval: 15_000,
+  });
+  const status = useQuery({
+    queryKey: ['system-status'],
+    queryFn: () => api.get<SystemStatus>('/system/status'),
+    refetchInterval: 30_000,
   });
 
   async function saveGithubToken() {
@@ -92,6 +98,50 @@ export function SettingsPage() {
           <Button className="mt-3" variant="outline" onClick={() => void saveGithubToken()} disabled={!token.trim()}>Store session hint</Button>
           <p className="mt-3 text-[11px] leading-relaxed text-slate-600">This application deliberately does not persist third-party tokens in local storage. Enter a token directly on the GitHub page for one-off requests, or configure the server environment.</p>
           {notice && <div className="mt-3 rounded-lg border border-accent-400/20 bg-accent-500/10 px-3 py-2 text-xs text-accent-300">{notice}</div>}
+        </Card>
+
+        <Card className="p-5 lg:col-span-2">
+          <div className="label mb-4"><Activity className="mr-1 inline h-3.5 w-3.5" /> Runtime status</div>
+          {status.isLoading ? <Spinner /> : status.error ? <div className="text-xs text-rose-300">{status.error instanceof Error ? status.error.message : 'System status unavailable'}</div> : status.data ? (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <div className="rounded-lg border border-white/5 bg-ink-950/50 p-3">
+                <div className="text-[11px] uppercase tracking-wide text-slate-600">Runtime</div>
+                <div className="mt-2 space-y-1 text-xs text-slate-400">
+                  <div className="flex justify-between"><span>Uptime</span><span className="font-mono text-slate-200">{status.data.uptimeSeconds}s</span></div>
+                  <div className="flex justify-between"><span>Node</span><span className="font-mono text-slate-200">{status.data.nodeVersion}</span></div>
+                  <div className="flex justify-between"><span>Platform</span><span className="font-mono text-slate-200">{status.data.platform}</span></div>
+                </div>
+              </div>
+              <div className="rounded-lg border border-white/5 bg-ink-950/50 p-3">
+                <div className="text-[11px] uppercase tracking-wide text-slate-600">Storage & queue</div>
+                <div className="mt-2 space-y-1 text-xs text-slate-400">
+                  <div className="flex justify-between"><span>Storage</span><span className="font-mono text-slate-200">{status.data.storage.mode}</span></div>
+                  <div className="flex justify-between"><span>Redis</span><span className="font-mono text-slate-200">{status.data.redis.connected ? 'connected' : status.data.redis.configured ? 'configured' : 'disabled'}</span></div>
+                  <div className="flex justify-between"><span>Queue</span><span className="font-mono text-slate-200">{status.data.queue.mode}</span></div>
+                  <div className="flex justify-between"><span>Rate limit</span><span className="font-mono text-slate-200">{status.data.rateLimit.mode}</span></div>
+                </div>
+              </div>
+              <div className="rounded-lg border border-white/5 bg-ink-950/50 p-3">
+                <div className="text-[11px] uppercase tracking-wide text-slate-600"><Database className="mr-1 inline h-3 w-3" /> Records</div>
+                <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-slate-400">
+                  {Object.entries(status.data.counts).map(([key, value]) => (
+                    <div key={key} className="flex justify-between gap-2"><span className="truncate">{key}</span><span className="font-mono text-slate-200">{value}</span></div>
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-lg border border-white/5 bg-ink-950/50 p-3">
+                <div className="text-[11px] uppercase tracking-wide text-slate-600">Providers</div>
+                <div className="mt-2 space-y-1 text-xs text-slate-400">
+                  {status.data.providers.map((provider) => (
+                    <div key={provider.id} className="flex justify-between gap-2">
+                      <span className="font-mono">{provider.id}</span>
+                      <span className={provider.configured ? 'text-mint' : 'text-slate-600'}>{provider.configured ? `${provider.models} models` : 'offline'}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : null}
         </Card>
 
         <Card className="p-5">

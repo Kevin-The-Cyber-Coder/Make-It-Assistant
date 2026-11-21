@@ -87,6 +87,22 @@ export interface SearchResult {
   updatedAt?: string;
 }
 
+export interface SystemStatus {
+  status: string;
+  service: string;
+  timestamp: string;
+  uptimeSeconds: number;
+  nodeVersion: string;
+  platform: string;
+  hostname: string;
+  storage: { mode: string };
+  redis: { configured: boolean; connected: boolean };
+  rateLimit: { mode: string; windowMs: number; max: number };
+  queue: { mode: string };
+  providers: Array<{ id: string; configured: boolean; models: number }>;
+  counts: Record<string, number>;
+}
+
 export interface Overview {
   totalProjects: number;
   activeAgentTasks: number;
