@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { GitPullRequest } from 'lucide-react';
-import { api } from '@/lib/api';
+import { Download, GitPullRequest } from 'lucide-react';
+import { api, getAccessToken } from '@/lib/api';
 import type { ReviewFinding, ReviewMetrics } from '@/lib/types';
 import { Badge, Button, Card, EmptyState, PageHeader, StatCard, Textarea } from '@/components/ui';
 import { severityClass } from '@/lib/utils';
@@ -36,6 +36,29 @@ export function ReviewPage() {
     }
   }
 
+  async function exportReview() {
+    if (!review) return;
+    setError('');
+    try {
+      const base = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api/v1';
+      const token = getAccessToken();
+      const response = await fetch(`${base}/dev/reviews/${review.id}/export`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error(`Export failed (${response.status})`);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `code-review-${review.id}.json`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Export failed');
+    }
+  }
+
   return (
     <>
       <PageHeader eyebrow="Quality intelligence" title="Code Reviews" description="Rule-based review findings with severity, location and suggested corrections. GitHub PR reviews use the same engine." />
@@ -63,7 +86,7 @@ export function ReviewPage() {
           </div>
         </Card>
         <Card>
-          <div className="panel-header"><div className="label">Review output</div>{review && <Badge>{review.findings.length} findings</Badge>}</div>
+          <div className="panel-header"><div className="label">Review output</div>{review && <div className="flex items-center gap-2"><Button variant="outline" size="sm" onClick={() => void exportReview()}><Download className="h-3.5 w-3.5" /> Export</Button><Badge>{review.findings.length} findings</Badge></div>}</div>
           {review ? (
             <>
               <div className="border-b border-white/5 px-5 py-4 text-sm text-slate-300">{review.summary}</div>
