@@ -32,6 +32,7 @@
 - Authenticated system version endpoint and Settings version display.
 - Dashboard audit telemetry card and audit log shortcut.
 - Dashboard runtime health card with system status summary.
+- Authenticated system configuration summary endpoint and Settings panel.
 - React engineering console with all feature workspaces.
 - Vitest unit/integration tests, CI workflow and generated repository status report.
 
