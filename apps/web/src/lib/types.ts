@@ -77,6 +77,16 @@ export interface AuditLog {
   createdAt: string;
 }
 
+export interface SearchResult {
+  type: 'project' | 'conversation' | 'task' | 'repository' | 'scan' | 'review' | 'test-run' | 'message' | 'audit';
+  id: string;
+  title: string;
+  subtitle: string;
+  path: string;
+  score: number;
+  updatedAt?: string;
+}
+
 export interface Overview {
   totalProjects: number;
   activeAgentTasks: number;

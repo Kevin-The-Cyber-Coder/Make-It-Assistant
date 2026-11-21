@@ -14,6 +14,7 @@ import { createGithubRouter } from './modules/github/routes';
 import { createGithubOAuthRouter } from './modules/github/oauth';
 import { createAnalyticsRouter } from './modules/analytics/routes';
 import { createAuditRouter } from './modules/audit/routes';
+import { createSearchRouter } from './modules/search/routes';
 
 export function createApp(context: AppContext): Express {
   const app = express();
@@ -55,6 +56,7 @@ export function createApp(context: AppContext): Express {
   api.use('/github', createGithubRouter(context));
   api.use('/analytics', createAnalyticsRouter(context));
   api.use('/audit', createAuditRouter(context));
+  api.use('/search', createSearchRouter(context));
   app.use(context.env.API_PREFIX, api);
 
   app.use(notFound);

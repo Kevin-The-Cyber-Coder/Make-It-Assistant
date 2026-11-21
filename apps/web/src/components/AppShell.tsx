@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   Activity, Bot, Braces, Code2, Command, FolderGit2, Gauge, Github, Layers3,
   Menu, MessageSquare, Search, Settings, ShieldCheck, FlaskConical, X, Bug, GitPullRequest, ScrollText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { api } from '@/lib/api';
+import type { SearchResult } from '@/lib/types';
 import { Button } from './ui';
 
 const NAV = [
@@ -29,12 +32,30 @@ const NAV = [
   ] },
 ];
 
+const RESULT_LABELS: Record<SearchResult['type'], string> = {
+  project: 'Project',
+  conversation: 'Conversation',
+  task: 'Agent task',
+  repository: 'Repository',
+  scan: 'Security scan',
+  review: 'Code review',
+  'test-run': 'Test run',
+  message: 'Message',
+  audit: 'Audit event',
+};
+
 export function AppShell() {
   const [collapsed, setCollapsed] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchText, setSearchText] = useState('');
   const location = useLocation();
   const navigate = useNavigate();
+
+  function closePalette() {
+    setPaletteOpen(false);
+    setSearchText('');
+  }
 
   useEffect(() => setMobileOpen(false), [location.pathname]);
   useEffect(() => {
@@ -43,7 +64,7 @@ export function AppShell() {
         event.preventDefault();
         setPaletteOpen((open) => !open);
       }
-      if (event.key === 'Escape') setPaletteOpen(false);
+      if (event.key === 'Escape') closePalette();
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -51,6 +72,19 @@ export function AppShell() {
 
   const items = useMemo(() => NAV.flatMap((group) => group.items), []);
   const current = items.find((item) => item.to === location.pathname);
+  const normalizedSearch = searchText.trim().toLowerCase();
+  const navMatches = useMemo(() => {
+    if (!normalizedSearch) return items;
+    return items.filter((item) => item.label.toLowerCase().includes(normalizedSearch) || item.to.toLowerCase().includes(normalizedSearch));
+  }, [items, normalizedSearch]);
+  const searchQuery = useQuery({
+    queryKey: ['global-search', normalizedSearch],
+    queryFn: () => api.get<{ results: SearchResult[] }>(`/search?q=${encodeURIComponent(searchText.trim())}&limit=12`),
+    enabled: paletteOpen && searchText.trim().length >= 2,
+    placeholderData: (previous) => previous,
+  });
+  const results = searchText.trim().length >= 2 ? (searchQuery.data?.results ?? []) : [];
+  const showSearching = searchText.trim().length >= 2 && searchQuery.isFetching;
 
   return (
     <div className="flex h-full min-h-screen">
@@ -135,35 +169,74 @@ export function AppShell() {
       </div>
 
       {paletteOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 px-4 pt-[12vh] backdrop-blur-sm" onClick={() => setPaletteOpen(false)}>
-          <div className="w-full max-w-xl overflow-hidden rounded-2xl border border-white/10 bg-ink-900 shadow-panel" onClick={(event) => event.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 px-4 pt-[12vh] backdrop-blur-sm" onClick={closePalette}>
+          <div className="w-full max-w-2xl overflow-hidden rounded-2xl border border-white/10 bg-ink-900 shadow-panel" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-center gap-3 border-b border-white/5 px-4 py-3">
               <Search className="h-4 w-4 text-slate-500" />
               <input
                 autoFocus
-                placeholder="Jump to a workspace…"
+                value={searchText}
+                placeholder="Search workspaces, projects, tasks, messages…"
                 className="w-full bg-transparent text-sm text-slate-100 outline-none placeholder:text-slate-600"
-                onChange={(event) => {
-                  const query = event.target.value.toLowerCase();
-                  const match = items.find((item) => item.label.toLowerCase().includes(query));
-                  if (query && match) navigate(match.to);
+                onChange={(event) => setSearchText(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    const first = results[0] ?? navMatches[0];
+                    if (!first) return;
+                    navigate('to' in first ? first.to : first.path);
+                    closePalette();
+                  }
                 }}
               />
+              {showSearching && <span className="text-[11px] text-slate-600">searching…</span>}
             </div>
-            <div className="max-h-80 overflow-y-auto p-2">
-              {items.map((item) => (
-                <button
-                  key={item.to}
-                  onClick={() => { navigate(item.to); setPaletteOpen(false); }}
-                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-slate-300 hover:bg-white/5"
-                >
-                  <item.icon className="h-4 w-4 text-accent-400" />
-                  {item.label}
-                  <span className="ml-auto font-mono text-[10px] text-slate-600">{item.to}</span>
-                </button>
-              ))}
+            <div className="max-h-[28rem] overflow-y-auto p-2">
+              {navMatches.length > 0 && (
+                <div className="mb-2">
+                  <div className="label px-3 pb-1 pt-1">Workspaces</div>
+                  {navMatches.map((item) => (
+                    <button
+                      key={item.to}
+                      onClick={() => { navigate(item.to); closePalette(); }}
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-slate-300 hover:bg-white/5"
+                    >
+                      <item.icon className="h-4 w-4 text-accent-400" />
+                      {item.label}
+                      <span className="ml-auto font-mono text-[10px] text-slate-600">{item.to}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {searchText.trim().length >= 2 && (
+                <div>
+                  <div className="label px-3 pb-1 pt-1">Results</div>
+                  {results.map((result) => (
+                    <button
+                      key={`${result.type}:${result.id}`}
+                      onClick={() => { navigate(result.path); closePalette(); }}
+                      className="flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left text-sm hover:bg-white/5"
+                    >
+                      <Search className="mt-0.5 h-4 w-4 shrink-0 text-accent-400" />
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-slate-200">{result.title}</div>
+                        <div className="truncate text-[11px] text-slate-500">{result.subtitle}</div>
+                      </div>
+                      <span className="shrink-0 rounded border border-white/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-slate-500">{RESULT_LABELS[result.type]}</span>
+                    </button>
+                  ))}
+                  {!searchQuery.isFetching && !results.length && !searchQuery.error && (
+                    <div className="px-3 py-4 text-xs text-slate-600">No matching records in this organization.</div>
+                  )}
+                  {searchQuery.error && (
+                    <div className="px-3 py-4 text-xs text-rose-300">{searchQuery.error instanceof Error ? searchQuery.error.message : 'Search unavailable.'}</div>
+                  )}
+                </div>
+              )}
+              {searchText.trim().length < 2 && !navMatches.length && (
+                <div className="px-3 py-4 text-xs text-slate-600">Type to filter workspaces or search records.</div>
+              )}
             </div>
-            <div className="border-t border-white/5 px-4 py-2 text-[11px] text-slate-600">Type to filter · Esc to close</div>
+            <div className="border-t border-white/5 px-4 py-2 text-[11px] text-slate-600">Enter to open first result · Esc to close · 2+ characters searches organization records</div>
           </div>
         </div>
       )}
