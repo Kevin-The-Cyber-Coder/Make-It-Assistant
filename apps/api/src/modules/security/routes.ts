@@ -79,8 +79,11 @@ export function createSecurityRouter(context: AppContext): Router {
   });
 
   router.get('/scans', async (request, response) => {
+    const projectId = typeof request.query.projectId === 'string' ? request.query.projectId.trim() : '';
+    const where: Record<string, string> = { organizationId: request.actor!.organizationId };
+    if (projectId) where.projectId = projectId;
     const scans = await context.db.repositories.securityScans.find({
-      where: { organizationId: request.actor!.organizationId },
+      where,
       sort: { field: 'createdAt', direction: 'desc' },
       limit: 50,
     });
