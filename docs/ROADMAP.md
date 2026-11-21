@@ -27,6 +27,7 @@
 - Project metrics endpoint and Projects workspace telemetry cards.
 - Conversation metrics endpoint and AI Assistant telemetry cards.
 - GitHub integration metrics endpoint and workspace telemetry cards.
+- Agent queue visibility card in the Agent Console.
 - React engineering console with all feature workspaces.
 - Vitest unit/integration tests, CI workflow and generated repository status report.
 

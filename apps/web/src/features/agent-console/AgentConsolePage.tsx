@@ -23,6 +23,7 @@ export function AgentConsolePage() {
 
   const tasks = useQuery({ queryKey: ['agent-tasks'], queryFn: () => api.get<{ tasks: AgentTask[] }>('/agents/tasks'), refetchInterval: 3000 });
   const metrics = useQuery({ queryKey: ['agent-metrics'], queryFn: () => api.get<{ metrics: AgentMetrics }>('/agents/metrics'), refetchInterval: 10_000 });
+  const queue = useQuery({ queryKey: ['agent-queue'], queryFn: () => api.get<{ mode: string; length: number }>('/agents/queue'), refetchInterval: 10_000 });
   const events = useQuery({
     queryKey: ['agent-events', selected],
     queryFn: () => api.get<{ events: AgentEvent[] }>(`/agents/tasks/${selected}/events`),
@@ -79,11 +80,12 @@ export function AgentConsolePage() {
         description="Plan, execute and supervise specialised agents with approval checkpoints and live execution events."
         actions={<Badge className="border-mint/30 bg-mint/10 text-mint"><Radio className="mr-1 h-3 w-3" /> live events</Badge>}
       />
-      <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <StatCard label="Total tasks" value={metrics.data?.metrics.total ?? 0} />
         <StatCard label="Running" value={metrics.data?.metrics.running ?? 0} tone="accent" />
         <StatCard label="Awaiting approval" value={metrics.data?.metrics.awaitingApproval ?? 0} tone={metrics.data?.metrics.awaitingApproval ? 'rose' : 'default'} />
         <StatCard label="Avg completion" value={metrics.data?.metrics.avgCompletionMs ? `${Math.round(metrics.data.metrics.avgCompletionMs / 1000)}s` : '—'} tone="mint" />
+        <StatCard label="Queue" value={queue.data?.length ?? 0} hint={queue.data?.mode ? `mode: ${queue.data.mode}` : undefined} />
       </div>
       <div className="grid gap-5 xl:grid-cols-[360px_1fr]">
         <div className="space-y-5">
