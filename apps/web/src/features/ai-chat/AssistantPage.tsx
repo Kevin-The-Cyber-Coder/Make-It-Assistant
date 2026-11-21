@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Bot, CornerDownLeft, Cpu, Sparkles, User } from 'lucide-react';
 import { api, getAccessToken } from '@/lib/api';
-import type { Message } from '@/lib/types';
-import { Badge, Button, Card, EmptyState, PageHeader, Select, Textarea } from '@/components/ui';
+import type { ConversationMetrics, Message } from '@/lib/types';
+import { Badge, Button, Card, EmptyState, PageHeader, Select, StatCard, Textarea } from '@/components/ui';
 import { cn, formatDate } from '@/lib/utils';
 
 interface ProviderInfo {
@@ -27,6 +27,7 @@ export function AssistantPage() {
   const bottom = useRef<HTMLDivElement>(null);
 
   const providers = useQuery({ queryKey: ['providers'], queryFn: () => api.get<{ providers: ProviderInfo[] }>('/ai/providers') });
+  const metrics = useQuery({ queryKey: ['conversation-metrics'], queryFn: () => api.get<{ metrics: ConversationMetrics }>('/conversations/metrics'), refetchInterval: 30_000 });
 
   useEffect(() => { bottom.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
@@ -101,6 +102,7 @@ export function AssistantPage() {
             if (event === 'done' && payload.conversationId) {
               setConversationId(payload.conversationId);
               setStatus(`Completed with ${provider || 'auto-routed model'}`);
+              void metrics.refetch();
             }
             if (event === 'error') setStatus(`Error: ${payload.message}`);
           }
@@ -123,6 +125,12 @@ export function AssistantPage() {
         description="Project-aware conversations with model routing, streaming and defensive guardrails."
         actions={<Badge className="border-accent-400/30 bg-accent-500/10 text-accent-400"><Cpu className="mr-1 h-3 w-3" /> {providers.data?.providers.filter((item) => item.configured).length ?? 0} providers configured</Badge>}
       />
+      <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Conversations" value={metrics.data?.metrics.totalConversations ?? 0} />
+        <StatCard label="Messages" value={metrics.data?.metrics.totalMessages ?? 0} tone="accent" />
+        <StatCard label="Active (24h)" value={metrics.data?.metrics.activeLast24h ?? 0} />
+        <StatCard label="Avg msgs/conv" value={metrics.data?.metrics.avgMessagesPerConversation ?? 0} tone="mint" />
+      </div>
       <div className="grid gap-5 xl:grid-cols-[1fr_280px]">
         <Card className="flex h-[calc(100vh-230px)] min-h-[520px] flex-col">
           <div className="panel-header">
