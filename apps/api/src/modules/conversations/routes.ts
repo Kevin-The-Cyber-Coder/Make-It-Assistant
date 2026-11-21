@@ -13,8 +13,19 @@ export function createConversationRouter(context: AppContext): Router {
   router.get('/', async (request, response) => {
     const query = paginationSchema.parse(request.query);
     const projectId = typeof request.query.projectId === 'string' ? request.query.projectId.trim() : '';
+    const q = typeof request.query.q === 'string' ? request.query.q.trim().toLowerCase() : '';
     const where: Record<string, string> = { organizationId: request.actor!.organizationId };
     if (projectId) where.projectId = projectId;
+    if (q) {
+      const all = await context.db.repositories.conversations.find({
+        where,
+        sort: { field: 'updatedAt', direction: 'desc' },
+        limit: 1000,
+      });
+      const filtered = all.filter((conversation) => conversation.title.toLowerCase().includes(q));
+      response.json({ conversations: filtered.slice(query.offset, query.offset + query.limit) });
+      return;
+    }
     const conversations = await context.db.repositories.conversations.find({
       where,
       sort: { field: 'updatedAt', direction: 'desc' },

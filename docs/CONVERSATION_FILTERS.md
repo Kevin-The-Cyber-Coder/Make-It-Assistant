@@ -4,4 +4,7 @@
 
 ### `GET /api/v1/conversations`
 
-Supports optional `projectId` query parameter to filter conversations for a specific project within the authenticated organization.
+Supports optional query parameters:
+
+- `projectId` - filter conversations for a specific project
+- `q` - filter conversations by title text
