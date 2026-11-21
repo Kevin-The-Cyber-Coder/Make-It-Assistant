@@ -58,6 +58,16 @@ Returns organization-wide counts grouped by action, resource type and actor:
 }
 ```
 
+### `GET /api/v1/audit/:id`
+
+Returns a single audit log entry for the authenticated organization.
+
+```json
+{ "entry": { "id": "...", "action": "...", "resource": "..." } }
+```
+
+Returns 404 when the audit entry does not exist in the organization.
+
 ## Console
 
 The **Audit Log** workspace is available under **Intelligence** in the sidebar and at `/audit`. It provides full-text and exact filters, a newest-first event table, record detail with metadata JSON, summary counters, and server-side JSON/CSV export of filtered records.
