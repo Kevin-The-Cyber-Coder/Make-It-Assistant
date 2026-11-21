@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { GitPullRequest } from 'lucide-react';
 import { api } from '@/lib/api';
-import type { ReviewFinding } from '@/lib/types';
-import { Badge, Button, Card, EmptyState, PageHeader, Textarea } from '@/components/ui';
+import type { ReviewFinding, ReviewMetrics } from '@/lib/types';
+import { Badge, Button, Card, EmptyState, PageHeader, StatCard, Textarea } from '@/components/ui';
 import { severityClass } from '@/lib/utils';
 
 interface ReviewRecord {
@@ -21,6 +21,7 @@ export function ReviewPage() {
   const [review, setReview] = useState<ReviewRecord | null>(null);
   const [error, setError] = useState('');
   const history = useQuery({ queryKey: ['reviews'], queryFn: () => api.get<{ reviews: ReviewRecord[] }>('/dev/reviews') });
+  const metrics = useQuery({ queryKey: ['review-metrics'], queryFn: () => api.get<{ metrics: ReviewMetrics }>('/dev/reviews/metrics'), refetchInterval: 30_000 });
 
   async function runReview() {
     setError('');
@@ -29,6 +30,7 @@ export function ReviewPage() {
       const result = await api.post<{ review: ReviewRecord }>('/dev/code/review', { files, title: 'Manual source review' });
       setReview(result.review);
       void history.refetch();
+      void metrics.refetch();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Review failed');
     }
@@ -37,6 +39,12 @@ export function ReviewPage() {
   return (
     <>
       <PageHeader eyebrow="Quality intelligence" title="Code Reviews" description="Rule-based review findings with severity, location and suggested corrections. GitHub PR reviews use the same engine." />
+      <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Total reviews" value={metrics.data?.metrics.totalReviews ?? 0} />
+        <StatCard label="Total findings" value={metrics.data?.metrics.totalFindings ?? 0} tone="accent" />
+        <StatCard label="Critical/High" value={(metrics.data?.metrics.bySeverity.critical ?? 0) + (metrics.data?.metrics.bySeverity.high ?? 0)} tone="rose" />
+        <StatCard label="Latest findings" value={metrics.data?.metrics.latestReview?.findings ?? '—'} tone="mint" />
+      </div>
       <div className="grid gap-5 xl:grid-cols-[420px_1fr]">
         <Card className="p-5">
           <div className="label mb-3">Review source</div>
