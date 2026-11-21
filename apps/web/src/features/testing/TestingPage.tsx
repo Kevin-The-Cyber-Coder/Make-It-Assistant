@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Download, FlaskConical } from 'lucide-react';
+import { Download, FlaskConical, Trash2 } from 'lucide-react';
 import { api, getAccessToken } from '@/lib/api';
 import type { TestingMetrics } from '@/lib/types';
 import { Badge, Button, Card, EmptyState, PageHeader, StatCard, Textarea } from '@/components/ui';
@@ -60,6 +60,19 @@ export function TestingPage() {
     }
   }
 
+  async function deleteRun() {
+    if (!run) return;
+    setError('');
+    try {
+      await api.delete(`/dev/testing/runs/${run.id}`);
+      setRun(null);
+      void runs.refetch();
+      void metrics.refetch();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Delete failed');
+    }
+  }
+
   return (
     <>
       <PageHeader eyebrow="Quality intelligence" title="Testing Lab" description="Generate framework-appropriate test skeletons. Execution is gated behind an approved isolated sandbox worker." />
@@ -87,7 +100,7 @@ export function TestingPage() {
         <div className="space-y-5">
           {run && <Card className="p-5"><div className="label mb-2">Execution note</div><div className="text-sm text-slate-300">{run.output}</div><Badge className="mt-3">{run.status}</Badge></Card>}
           <Card>
-            <div className="panel-header"><div className="label">Generated skeletons</div><div className="flex items-center gap-2">{run && <Button variant="outline" size="sm" onClick={() => void exportRun()}><Download className="h-3.5 w-3.5" /> Export</Button>}<Badge>{run?.generatedTests.length ?? 0}</Badge></div></div>
+            <div className="panel-header"><div className="label">Generated skeletons</div><div className="flex items-center gap-2">{run && <><Button variant="outline" size="sm" onClick={() => void exportRun()}><Download className="h-3.5 w-3.5" /> Export</Button><Button variant="danger" size="sm" onClick={() => void deleteRun()}><Trash2 className="h-3.5 w-3.5" /> Delete</Button></>}<Badge>{run?.generatedTests.length ?? 0}</Badge></div></div>
             {run?.generatedTests.length ? (
               <div className="max-h-[520px] space-y-4 overflow-y-auto p-4">
                 {run.generatedTests.map((test) => (
