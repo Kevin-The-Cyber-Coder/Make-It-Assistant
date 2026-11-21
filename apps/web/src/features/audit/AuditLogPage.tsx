@@ -4,7 +4,7 @@ import { Download, ScrollText, Search, ShieldCheck } from 'lucide-react';
 import { api, getAccessToken } from '@/lib/api';
 import { Badge, Button, Card, EmptyState, Input, PageHeader, Spinner, StatCard } from '@/components/ui';
 import { formatDate } from '@/lib/utils';
-import type { AuditLog } from '@/lib/types';
+import type { AuditLog, AuditSummary } from '@/lib/types';
 
 interface AuditFilters {
   q: string;
@@ -20,12 +20,6 @@ interface AuditListResponse {
   offset: number;
 }
 
-interface AuditSummary {
-  total: number;
-  byAction: Array<{ name: string; count: number }>;
-  byResource: Array<{ name: string; count: number }>;
-  byActor: Array<{ name: string; count: number }>;
-}
 
 const EMPTY_FILTERS: AuditFilters = { q: '', action: '', resource: '', actorId: '' };
 

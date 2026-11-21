@@ -154,6 +154,13 @@ export interface SearchResult {
   updatedAt?: string;
 }
 
+export interface AuditSummary {
+  total: number;
+  byAction: Array<{ name: string; count: number }>;
+  byResource: Array<{ name: string; count: number }>;
+  byActor: Array<{ name: string; count: number }>;
+}
+
 export interface SystemStatus {
   status: string;
   service: string;

@@ -1,14 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, Pie, PieChart, Cell } from 'recharts';
-import { ArrowUpRight, Bot, FolderGit2, GitPullRequest, ShieldAlert, Sparkles } from 'lucide-react';
+import { ArrowUpRight, Bot, FileClock, FolderGit2, GitPullRequest, ShieldAlert, Sparkles } from 'lucide-react';
 import { api } from '@/lib/api';
-import type { Overview } from '@/lib/types';
+import type { AuditSummary, Overview } from '@/lib/types';
 import { Badge, Card, EmptyState, PageHeader, StatCard, Spinner } from '@/components/ui';
 import { formatDate, severityClass, timeAgo } from '@/lib/utils';
 
 export function DashboardPage() {
   const { data, isLoading, error } = useQuery({ queryKey: ['overview'], queryFn: () => api.get<{ overview: Overview }>('/analytics/overview'), refetchInterval: 20_000 });
+  const audit = useQuery({ queryKey: ['audit-summary-dashboard'], queryFn: () => api.get<AuditSummary>('/audit/summary'), refetchInterval: 30_000 });
 
   if (isLoading) return <div className="flex h-64 items-center justify-center"><Spinner className="h-6 w-6" /></div>;
   if (error || !data) return <EmptyState title="Dashboard unavailable" description={error instanceof Error ? error.message : 'Could not load metrics.'} />;
@@ -27,11 +28,12 @@ export function DashboardPage() {
         actions={<Badge className="border-mint/30 bg-mint/10 text-mint">Storage: {overview.storageMode}</Badge>}
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <StatCard label="Projects" value={overview.totalProjects} hint="Indexed workspaces" />
         <StatCard label="Active agents" value={overview.activeAgentTasks} hint={`${overview.completedTasks} completed tasks`} tone="accent" />
         <StatCard label="Security findings" value={Object.values(overview.securityFindings ?? {}).reduce((a, b) => a + b, 0)} hint="Latest scan" tone="rose" />
         <StatCard label="AI requests" value={overview.aiRequests} hint={`${overview.tokensUsed.toLocaleString()} tokens`} tone="mint" />
+        <StatCard label="Audit events" value={audit.data?.total ?? 0} hint={audit.data?.byAction[0] ? `Top: ${audit.data.byAction[0].name}` : 'Org activity'} />
       </div>
 
       <div className="mt-5 grid gap-5 xl:grid-cols-3">
@@ -129,6 +131,7 @@ export function DashboardPage() {
         <Badge className={severityClass('medium')}>Medium {overview.securityFindings?.medium ?? 0}</Badge>
         <Badge className={severityClass('low')}>Low {overview.securityFindings?.low ?? 0}</Badge>
         <Link to="/security"><Badge className="border-accent-400/30 bg-accent-500/10 text-accent-400"><ShieldAlert className="mr-1 h-3 w-3" /> Open security center</Badge></Link>
+        <Link to="/audit"><Badge className="border-white/10 bg-white/5 text-slate-300"><FileClock className="mr-1 h-3 w-3" /> Open audit log</Badge></Link>
       </div>
     </>
   );
