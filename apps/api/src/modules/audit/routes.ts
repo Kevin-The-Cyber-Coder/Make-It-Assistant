@@ -162,5 +162,13 @@ export function createAuditRouter(context: AppContext): Router {
     });
   }));
 
+  router.get('/:id', asyncRoute(async (request, response) => {
+    const entry = await context.db.repositories.auditLogs.findById(request.params.id);
+    if (!entry || entry.organizationId !== request.actor!.organizationId) {
+      throw new AppError('NOT_FOUND', 'Audit log entry not found');
+    }
+    response.json({ entry });
+  }));
+
   return router;
 }
