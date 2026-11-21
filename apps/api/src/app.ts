@@ -44,6 +44,37 @@ export function createApp(context: AppContext): Express {
     });
   });
 
+  app.get('/readyz', (_request, response, next) => {
+    void (async () => {
+      const checks: Record<string, { ok: boolean; detail?: string }> = {};
+      try {
+        await context.db.repositories.organizations.count();
+        checks.storage = { ok: true, detail: context.db.mode };
+      } catch (error) {
+        checks.storage = { ok: false, detail: error instanceof Error ? error.message : String(error) };
+      }
+
+      if (context.redis) {
+        try {
+          await context.redis.ping();
+          checks.redis = { ok: true, detail: 'connected' };
+        } catch (error) {
+          checks.redis = { ok: false, detail: error instanceof Error ? error.message : String(error) };
+        }
+      } else {
+        checks.redis = { ok: true, detail: context.env.REDIS_URL ? 'configured-but-disconnected' : 'disabled' };
+      }
+
+      const ok = Object.values(checks).every((check) => check.ok);
+      response.status(ok ? 200 : 503).json({
+        status: ok ? 'ready' : 'not_ready',
+        service: 'make-it-ai-api',
+        checks,
+        timestamp: new Date().toISOString(),
+      });
+    })().catch(next);
+  });
+
   const api = Router();
   api.use('/auth', createAuthRouter(context));
   api.use('/projects', createProjectRouter(context));
