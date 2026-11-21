@@ -170,6 +170,17 @@ export interface SystemStatus {
   counts: Record<string, number>;
 }
 
+export interface SystemVersion {
+  name: string;
+  service: string;
+  version: string;
+  nodeVersion: string;
+  platform: string;
+  startedAt: string;
+  timestamp: string;
+  commit: string | null;
+}
+
 export interface Overview {
   totalProjects: number;
   activeAgentTasks: number;
