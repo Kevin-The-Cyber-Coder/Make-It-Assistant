@@ -49,7 +49,7 @@
 - GitHub repository connection detail endpoint for organization-scoped retrieval.
 - AI metrics endpoint for organization-scoped conversation and message counts.
 - Security scan delete endpoint with role and audit checks, and Security Center delete action.
-- Code review delete endpoint with role and audit checks.
+- Code review delete endpoint with role and audit checks, and Review workspace delete action.
 - Test run delete endpoint with role and audit checks.
 - Agent task delete endpoint with role and audit checks.
 - Project conversations endpoint for organization-scoped project conversation retrieval.
