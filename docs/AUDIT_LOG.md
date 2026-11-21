@@ -4,7 +4,7 @@ MAKE IT AI records security-relevant actions in the `auditLogs` repository. The 
 
 ## API
 
-Both endpoints require a bearer access token. The organization is always taken from the authenticated actor; an `x-organization-id` header cannot expand the query beyond organizations the user belongs to.
+All endpoints require a bearer access token. The organization is always taken from the authenticated actor; an `x-organization-id` header cannot expand the query beyond organizations the user belongs to.
 
 ### `GET /api/v1/audit`
 
@@ -33,6 +33,18 @@ Response shape:
 
 Each listing request writes an `audit.read` entry with the active filter names and returned record count. The read audit is written after the query, so it appears in a subsequent refresh rather than in its own response.
 
+### `GET /api/v1/audit/export`
+
+Exports filtered audit entries as a downloadable file.
+
+| Parameter | Description |
+| --- | --- |
+| `format` | `json` (default) or `csv` |
+| `action`, `resource`, `actorId`, `resourceId`, `q` | Same filters as the list endpoint |
+| `limit` | Maximum exported rows from 1 to 5000, default 1000 |
+
+JSON exports return an attachment named `audit-log.json`. CSV exports return `text/csv` as `audit-log.csv` with metadata serialized as JSON in the metadata column. Each export writes an `audit.export` event with format, result count and active filter names.
+
 ### `GET /api/v1/audit/summary`
 
 Returns organization-wide counts grouped by action, resource type and actor:
@@ -48,7 +60,7 @@ Returns organization-wide counts grouped by action, resource type and actor:
 
 ## Console
 
-The **Audit Log** workspace is available under **Intelligence** in the sidebar and at `/audit`. It provides full-text and exact filters, a newest-first event table, record detail with metadata JSON, summary counters, and JSON export of the currently loaded page.
+The **Audit Log** workspace is available under **Intelligence** in the sidebar and at `/audit`. It provides full-text and exact filters, a newest-first event table, record detail with metadata JSON, summary counters, and server-side JSON/CSV export of filtered records.
 
 ## Storage and retention
 
