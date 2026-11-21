@@ -56,6 +56,7 @@
 - Project security scans endpoint for organization-scoped project scan retrieval.
 - Project code reviews endpoint for organization-scoped project review retrieval.
 - Project test runs endpoint for organization-scoped project test run retrieval.
+- Project agent tasks endpoint for organization-scoped project task retrieval.
 - React engineering console with all feature workspaces.
 - Vitest unit/integration tests, CI workflow and generated repository status report.
 
