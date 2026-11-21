@@ -26,8 +26,10 @@ export function createAgentRouter(context: AppContext): Router {
 
   router.get('/tasks', async (request, response) => {
     const projectId = typeof request.query.projectId === 'string' ? request.query.projectId.trim() : '';
+    const status = typeof request.query.status === 'string' ? request.query.status.trim() : '';
     let tasks = await context.orchestrator.tasks.list(request.actor!.organizationId);
     if (projectId) tasks = tasks.filter((task) => task.projectId === projectId);
+    if (status) tasks = tasks.filter((task) => task.status === status);
     response.json({ tasks });
   });
 
