@@ -33,6 +33,7 @@
 - Dashboard audit telemetry card and audit log shortcut.
 - Dashboard runtime health card with system status summary.
 - Authenticated system configuration summary endpoint and Settings panel.
+- Conversation export endpoint and AI Assistant export action.
 - React engineering console with all feature workspaces.
 - Vitest unit/integration tests, CI workflow and generated repository status report.
 
