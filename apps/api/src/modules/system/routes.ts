@@ -44,6 +44,29 @@ export function createSystemRouter(context: AppContext): Router {
     });
   }));
 
+  router.get('/config', asyncRoute(async (_request, response) => {
+    const providers = context.gateway.listProviders();
+    response.json({
+      service: 'make-it-ai-api',
+      timestamp: new Date().toISOString(),
+      storage: { mode: context.db.mode },
+      mongo: { configured: Boolean(context.env.MONGODB_URI) },
+      redis: { configured: Boolean(context.env.REDIS_URL), connected: Boolean(context.redis) },
+      queue: { mode: context.queue.mode },
+      rateLimit: { mode: context.rateLimiter.mode },
+      github: {
+        oauthConfigured: Boolean(context.env.GITHUB_CLIENT_ID && context.env.GITHUB_CLIENT_SECRET),
+        serverTokenConfigured: Boolean(context.env.GITHUB_TOKEN),
+      },
+      sandbox: { configured: Boolean(context.env.SANDBOX_URL) },
+      osv: { enabled: context.env.OSV_ENABLED === 'true' },
+      providers: {
+        configured: providers.filter((provider) => provider.configured).map((provider) => provider.id),
+        total: providers.length,
+      },
+    });
+  }));
+
   router.get('/status', asyncRoute(async (_request, response) => {
     const repositories = context.db.repositories;
     const [
