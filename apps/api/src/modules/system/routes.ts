@@ -1,7 +1,25 @@
 import { Router, type Request, type RequestHandler, type Response } from 'express';
 import os from 'node:os';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 import type { AppContext } from '../../context';
 import { requireAuth } from '../../middleware';
+
+const startedAt = new Date().toISOString();
+let cachedVersion: string | null = null;
+
+async function readVersion(): Promise<string> {
+  if (cachedVersion) return cachedVersion;
+  try {
+    const pkgPath = path.resolve(process.cwd(), 'package.json');
+    const raw = await readFile(pkgPath, 'utf8');
+    const parsed = JSON.parse(raw) as { version?: string };
+    cachedVersion = typeof parsed.version === 'string' ? parsed.version : '0.0.0';
+  } catch {
+    cachedVersion = '0.0.0';
+  }
+  return cachedVersion;
+}
 
 function asyncRoute(handler: (request: Request, response: Response) => Promise<void>): RequestHandler {
   return (request, response, next) => {
@@ -12,6 +30,19 @@ function asyncRoute(handler: (request: Request, response: Response) => Promise<v
 export function createSystemRouter(context: AppContext): Router {
   const router = Router();
   router.use(requireAuth(context));
+
+  router.get('/version', asyncRoute(async (_request, response) => {
+    response.json({
+      name: 'make-it-ai',
+      service: 'make-it-ai-api',
+      version: await readVersion(),
+      nodeVersion: process.version,
+      platform: process.platform,
+      startedAt,
+      timestamp: new Date().toISOString(),
+      commit: process.env.GIT_COMMIT_SHA ?? process.env.VERCEL_GIT_COMMIT_SHA ?? null,
+    });
+  }));
 
   router.get('/status', asyncRoute(async (_request, response) => {
     const repositories = context.db.repositories;
