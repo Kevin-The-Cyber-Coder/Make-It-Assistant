@@ -100,6 +100,25 @@ export function createAIRouter(context: AppContext): Router {
     response.json({ models: context.gateway.listModels() });
   });
 
+  router.get('/metrics', async (request, response) => {
+    const organizationId = request.actor!.organizationId;
+    const [conversations, messages] = await Promise.all([
+      context.db.repositories.conversations.find({ where: { organizationId } }),
+      context.db.repositories.messages.find({ where: { organizationId } }),
+    ]);
+    const byRole: Record<string, number> = {};
+    for (const message of messages) {
+      byRole[message.role] = (byRole[message.role] ?? 0) + 1;
+    }
+    response.json({
+      metrics: {
+        totalConversations: conversations.length,
+        totalMessages: messages.length,
+        byRole,
+      },
+    });
+  });
+
   router.post('/enhance', (request, response) => {
     const message = String(request.body?.message ?? '').trim();
     if (!message) throw new AppError('BAD_REQUEST', 'message is required');
