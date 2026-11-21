@@ -147,10 +147,12 @@ export function createDevRouter(context: AppContext): Router {
   router.get('/testing/runs', async (request, response) => {
     const projectId = typeof request.query.projectId === 'string' ? request.query.projectId.trim() : '';
     const status = typeof request.query.status === 'string' ? request.query.status.trim() : '';
+    const framework = typeof request.query.framework === 'string' ? request.query.framework.trim() : '';
     const q = typeof request.query.q === 'string' ? request.query.q.trim().toLowerCase() : '';
     const where: Record<string, string> = { organizationId: request.actor!.organizationId };
     if (projectId) where.projectId = projectId;
     if (status) where.status = status;
+    if (framework) where.framework = framework;
     let runs = await context.db.repositories.testRuns.find({
       where,
       sort: { field: 'createdAt', direction: 'desc' },
