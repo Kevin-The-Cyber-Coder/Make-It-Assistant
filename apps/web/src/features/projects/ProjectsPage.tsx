@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { FolderPlus, Layers3, Search, Trash2 } from 'lucide-react';
-import { api } from '@/lib/api';
+import { Download, FolderPlus, Layers3, Search, Trash2 } from 'lucide-react';
+import { api, getAccessToken } from '@/lib/api';
 import type { Project, ProjectMetrics } from '@/lib/types';
 import { Badge, Button, Card, EmptyState, Input, PageHeader, Spinner, StatCard, Textarea } from '@/components/ui';
 import { formatDate } from '@/lib/utils';
@@ -47,6 +47,28 @@ export function ProjectsPage() {
       void queryClient.invalidateQueries({ queryKey: ['overview'] });
     },
   });
+
+  async function exportProject() {
+    if (!selected) return;
+    try {
+      const base = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api/v1';
+      const token = getAccessToken();
+      const response = await fetch(`${base}/projects/${selected}/export`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error(`Export failed (${response.status})`);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `project-${selected}.json`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (caught) {
+      setMessage(caught instanceof Error ? caught.message : 'Export failed');
+    }
+  }
 
   return (
     <>
@@ -101,9 +123,12 @@ export function ProjectsPage() {
             <div className="label mb-3">Index source files</div>
             <p className="muted mb-3 text-xs">Paste a JSON array of <code className="font-mono text-accent-400">{'{ path, content }'}</code> objects. Files are stored as project context, not executed.</p>
             <Textarea rows={12} className="font-mono text-xs" value={filesJson} onChange={(event) => setFilesJson(event.target.value)} />
-            <Button className="mt-3" onClick={() => indexFiles.mutate()} disabled={indexFiles.isPending}>
-              <Layers3 className="h-4 w-4" /> {indexFiles.isPending ? 'Indexing…' : 'Index files'}
-            </Button>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button onClick={() => indexFiles.mutate()} disabled={indexFiles.isPending}>
+                <Layers3 className="h-4 w-4" /> {indexFiles.isPending ? 'Indexing…' : 'Index files'}
+              </Button>
+              <Button variant="outline" onClick={() => void exportProject()}><Download className="h-4 w-4" /> Export project</Button>
+            </div>
           </Card>
           <Card>
             <div className="panel-header"><div className="label">Indexed files</div><Badge>{files.data?.files.length ?? 0}</Badge></div>
