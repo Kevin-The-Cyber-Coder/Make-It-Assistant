@@ -29,6 +29,43 @@ export function createAgentRouter(context: AppContext): Router {
     response.json({ tasks });
   });
 
+  router.get('/metrics', async (request, response) => {
+    const tasks = await context.orchestrator.tasks.list(request.actor!.organizationId);
+    const now = Date.now();
+    const dayAgo = now - 24 * 60 * 60 * 1000;
+    const byStatus: Record<string, number> = {};
+    let completedLast24h = 0;
+    let failedLast24h = 0;
+    let completedDurationTotal = 0;
+    let completedDurationCount = 0;
+
+    for (const task of tasks) {
+      byStatus[task.status] = (byStatus[task.status] ?? 0) + 1;
+      const updatedAt = Date.parse(task.updatedAt);
+      if (task.status === 'completed' && updatedAt >= dayAgo) completedLast24h += 1;
+      if (task.status === 'failed' && updatedAt >= dayAgo) failedLast24h += 1;
+      if (task.status === 'completed') {
+        const createdAt = Date.parse(task.createdAt);
+        if (Number.isFinite(createdAt) && Number.isFinite(updatedAt) && updatedAt >= createdAt) {
+          completedDurationTotal += updatedAt - createdAt;
+          completedDurationCount += 1;
+        }
+      }
+    }
+
+    response.json({
+      metrics: {
+        total: tasks.length,
+        byStatus,
+        completedLast24h,
+        failedLast24h,
+        awaitingApproval: byStatus.awaiting_approval ?? 0,
+        running: byStatus.running ?? 0,
+        avgCompletionMs: completedDurationCount ? Math.round(completedDurationTotal / completedDurationCount) : null,
+      },
+    });
+  });
+
   router.get('/tasks/:id', async (request, response) => {
     const task = await context.orchestrator.tasks.get(request.actor!.organizationId, request.params.id);
     if (!task) throw new AppError('NOT_FOUND', 'Task not found');

@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ban, Bot, Check, CirclePause, Play, Radio, X } from 'lucide-react';
 import { api, getAccessToken } from '@/lib/api';
-import type { AgentEvent, AgentTask } from '@/lib/types';
-import { Badge, Button, Card, EmptyState, PageHeader, Spinner, Textarea } from '@/components/ui';
+import type { AgentEvent, AgentMetrics, AgentTask } from '@/lib/types';
+import { Badge, Button, Card, EmptyState, PageHeader, Spinner, StatCard, Textarea } from '@/components/ui';
 import { cn, formatDate } from '@/lib/utils';
 
 const statusTone: Record<string, string> = {
@@ -22,6 +22,7 @@ export function AgentConsolePage() {
   const [notice, setNotice] = useState('');
 
   const tasks = useQuery({ queryKey: ['agent-tasks'], queryFn: () => api.get<{ tasks: AgentTask[] }>('/agents/tasks'), refetchInterval: 3000 });
+  const metrics = useQuery({ queryKey: ['agent-metrics'], queryFn: () => api.get<{ metrics: AgentMetrics }>('/agents/metrics'), refetchInterval: 10_000 });
   const events = useQuery({
     queryKey: ['agent-events', selected],
     queryFn: () => api.get<{ events: AgentEvent[] }>(`/agents/tasks/${selected}/events`),
@@ -78,6 +79,12 @@ export function AgentConsolePage() {
         description="Plan, execute and supervise specialised agents with approval checkpoints and live execution events."
         actions={<Badge className="border-mint/30 bg-mint/10 text-mint"><Radio className="mr-1 h-3 w-3" /> live events</Badge>}
       />
+      <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Total tasks" value={metrics.data?.metrics.total ?? 0} />
+        <StatCard label="Running" value={metrics.data?.metrics.running ?? 0} tone="accent" />
+        <StatCard label="Awaiting approval" value={metrics.data?.metrics.awaitingApproval ?? 0} tone={metrics.data?.metrics.awaitingApproval ? 'rose' : 'default'} />
+        <StatCard label="Avg completion" value={metrics.data?.metrics.avgCompletionMs ? `${Math.round(metrics.data.metrics.avgCompletionMs / 1000)}s` : '—'} tone="mint" />
+      </div>
       <div className="grid gap-5 xl:grid-cols-[360px_1fr]">
         <div className="space-y-5">
           <Card className="p-5">

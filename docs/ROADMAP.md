@@ -20,6 +20,7 @@
 - Organization-scoped global search API wired into the console command palette.
 - Authenticated system status endpoint and Settings runtime diagnostics panel.
 - Readiness endpoint (`/readyz`) with storage/Redis checks for deployment probes.
+- Agent task metrics endpoint and Agent Console summary cards.
 - React engineering console with all feature workspaces.
 - Vitest unit/integration tests, CI workflow and generated repository status report.
 
