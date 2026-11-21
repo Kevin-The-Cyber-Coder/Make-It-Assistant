@@ -56,6 +56,14 @@ export function createConversationRouter(context: AppContext): Router {
     response.status(201).json({ conversation });
   });
 
+  router.get('/:id', async (request, response) => {
+    const conversation = await context.db.repositories.conversations.findById(request.params.id);
+    if (!conversation || conversation.organizationId !== request.actor!.organizationId) {
+      throw new AppError('NOT_FOUND', 'Conversation not found');
+    }
+    response.json({ conversation });
+  });
+
   router.get('/:id/messages', async (request, response) => {
     const conversation = await context.db.repositories.conversations.findById(request.params.id);
     if (!conversation || conversation.organizationId !== request.actor!.organizationId) {
