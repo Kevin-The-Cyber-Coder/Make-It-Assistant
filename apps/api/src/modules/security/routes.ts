@@ -87,6 +87,40 @@ export function createSecurityRouter(context: AppContext): Router {
     response.json({ scans });
   });
 
+  router.get('/metrics', async (request, response) => {
+    const scans = await context.db.repositories.securityScans.find({
+      where: { organizationId: request.actor!.organizationId },
+      sort: { field: 'createdAt', direction: 'desc' },
+      limit: 500,
+    });
+    const now = Date.now();
+    const dayAgo = now - 24 * 60 * 60 * 1000;
+    const cumulative: Record<string, number> = { critical: 0, high: 0, medium: 0, low: 0, info: 0 };
+    let scansLast24h = 0;
+    for (const scan of scans) {
+      for (const severity of Object.keys(cumulative)) {
+        cumulative[severity] += scan.summary?.[severity as keyof typeof scan.summary] ?? 0;
+      }
+      if (Date.parse(scan.createdAt) >= dayAgo) scansLast24h += 1;
+    }
+    const latest = scans[0];
+    response.json({
+      metrics: {
+        totalScans: scans.length,
+        scansLast24h,
+        cumulativeFindingsBySeverity: cumulative,
+        latestScan: latest ? {
+          id: latest.id,
+          createdAt: latest.createdAt,
+          filesScanned: latest.filesScanned,
+          findings: latest.findings.length,
+          summary: latest.summary,
+          risk: riskLevel(latest),
+        } : null,
+      },
+    });
+  });
+
   router.get('/scans/:id', async (request, response) => {
     const scan = await context.db.repositories.securityScans.findById(request.params.id);
     if (!scan || scan.organizationId !== request.actor!.organizationId) {
