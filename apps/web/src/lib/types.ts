@@ -26,6 +26,16 @@ export interface AgentEvent {
   createdAt: string;
 }
 
+export interface AgentMetrics {
+  total: number;
+  byStatus: Record<string, number>;
+  completedLast24h: number;
+  failedLast24h: number;
+  awaitingApproval: number;
+  running: number;
+  avgCompletionMs: number | null;
+}
+
 export interface ReviewFinding {
   id: string;
   category: string;
