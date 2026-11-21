@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ShieldAlert, ShieldCheck } from 'lucide-react';
-import { api } from '@/lib/api';
+import { Download, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { api, getAccessToken } from '@/lib/api';
 import type { SecurityFinding, SecurityMetrics, SecurityScan } from '@/lib/types';
 import { Badge, Button, Card, EmptyState, PageHeader, StatCard, Textarea } from '@/components/ui';
 import { severityClass } from '@/lib/utils';
@@ -53,6 +53,29 @@ export function SecurityPage() {
     }
   }
 
+  async function exportScan() {
+    if (!scan) return;
+    setError('');
+    try {
+      const base = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api/v1';
+      const token = getAccessToken();
+      const response = await fetch(`${base}/security/scans/${scan.id}/export`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error(`Export failed (${response.status})`);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `security-scan-${scan.id}.json`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Export failed');
+    }
+  }
+
   const findings: SecurityFinding[] = scan?.findings ?? [];
 
   return (
@@ -81,7 +104,7 @@ export function SecurityPage() {
         </Card>
         <div className="space-y-5">
           <Card>
-            <div className="panel-header"><div className="label">Findings</div><Badge>{findings.length}</Badge></div>
+            <div className="panel-header"><div className="label">Findings</div><div className="flex items-center gap-2">{scan && <Button variant="outline" size="sm" onClick={() => void exportScan()}><Download className="h-3.5 w-3.5" /> Export</Button>}<Badge>{findings.length}</Badge></div></div>
             {findings.length ? (
               <div className="max-h-[520px] divide-y divide-white/5 overflow-y-auto">
                 {findings.map((finding) => (

@@ -121,6 +121,17 @@ export function createSecurityRouter(context: AppContext): Router {
     });
   });
 
+  router.get('/scans/:id/export', async (request, response) => {
+    const scan = await context.db.repositories.securityScans.findById(request.params.id);
+    if (!scan || scan.organizationId !== request.actor!.organizationId) {
+      response.status(404).json({ error: { code: 'NOT_FOUND', message: 'Scan not found' } });
+      return;
+    }
+    await audit(context, request, 'security.scan.export', 'security_scan', scan.id, { findings: scan.findings.length });
+    response.setHeader('Content-Disposition', `attachment; filename="security-scan-${scan.id}.json"`);
+    response.json({ scan, risk: riskLevel(scan), exportedAt: new Date().toISOString() });
+  });
+
   router.get('/scans/:id', async (request, response) => {
     const scan = await context.db.repositories.securityScans.findById(request.params.id);
     if (!scan || scan.organizationId !== request.actor!.organizationId) {
