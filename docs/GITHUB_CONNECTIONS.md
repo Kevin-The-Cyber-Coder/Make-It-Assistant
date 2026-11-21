@@ -2,6 +2,12 @@
 
 ## API
 
+### `GET /api/v1/github/connections/:id`
+
+Requires authentication. Returns a single stored GitHub repository connection for the authenticated organization.
+
+Returns 404 when the connection does not exist in the organization.
+
 ### `DELETE /api/v1/github/connections/:id`
 
 Requires authentication. Owner or admin role required.
