@@ -94,6 +94,13 @@ export interface ReviewMetrics {
   latestReview: { id: string; title: string; findings: number; createdAt: string } | null;
 }
 
+export interface ProjectMetrics {
+  totalProjects: number;
+  indexedProjects: number;
+  indexedFiles: number;
+  updatedLast24h: number;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
