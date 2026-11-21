@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Download, ScrollText, Search, ShieldCheck } from 'lucide-react';
-import { api } from '@/lib/api';
+import { api, getAccessToken } from '@/lib/api';
 import { Badge, Button, Card, EmptyState, Input, PageHeader, Spinner, StatCard } from '@/components/ui';
 import { formatDate } from '@/lib/utils';
 import type { AuditLog } from '@/lib/types';
@@ -41,6 +41,7 @@ function buildPath(filters: AuditFilters): string {
 export function AuditLogPage() {
   const [filters, setFilters] = useState<AuditFilters>(EMPTY_FILTERS);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [exportError, setExportError] = useState('');
   const list = useQuery({
     queryKey: ['audit', filters],
     queryFn: () => api.get<AuditListResponse>(buildPath(filters)),
@@ -60,14 +61,32 @@ export function AuditLogPage() {
     setSelectedId(null);
   }
 
-  function exportPage() {
-    const blob = new Blob([JSON.stringify(entries, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `make-it-ai-audit-${new Date().toISOString().slice(0, 10)}.json`;
-    anchor.click();
-    URL.revokeObjectURL(url);
+  async function exportAudit(format: 'json' | 'csv') {
+    setExportError('');
+    try {
+      const params = new URLSearchParams();
+      for (const [key, value] of Object.entries(filters)) {
+        if (value.trim()) params.set(key, value.trim());
+      }
+      params.set('format', format);
+      params.set('limit', '1000');
+      const base = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api/v1';
+      const token = getAccessToken();
+      const response = await fetch(`${base}/audit/export?${params.toString()}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error(`Export failed (${response.status})`);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `make-it-ai-audit-${new Date().toISOString().slice(0, 10)}.${format}`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setExportError(error instanceof Error ? error.message : 'Export failed');
+    }
   }
 
   if (list.isLoading || summary.isLoading) {
@@ -90,12 +109,16 @@ export function AuditLogPage() {
         actions={
           <>
             <Badge className="border-mint/30 bg-mint/10 text-mint"><ShieldCheck className="mr-1 h-3 w-3" /> org scoped</Badge>
-            <Button variant="outline" size="sm" onClick={exportPage} disabled={!entries.length}>
-              <Download className="h-3.5 w-3.5" /> Export page
+            <Button variant="outline" size="sm" onClick={() => void exportAudit('json')}>
+              <Download className="h-3.5 w-3.5" /> Export JSON
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => void exportAudit('csv')}>
+              <Download className="h-3.5 w-3.5" /> Export CSV
             </Button>
           </>
         }
       />
+      {exportError && <div className="mb-4 rounded-lg border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">{exportError}</div>}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Total events" value={stats?.total ?? 0} tone="accent" />
