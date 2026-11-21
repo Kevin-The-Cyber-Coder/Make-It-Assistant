@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FolderPlus, Layers3, Search, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
-import type { Project } from '@/lib/types';
-import { Badge, Button, Card, EmptyState, Input, PageHeader, Spinner, Textarea } from '@/components/ui';
+import type { Project, ProjectMetrics } from '@/lib/types';
+import { Badge, Button, Card, EmptyState, Input, PageHeader, Spinner, StatCard, Textarea } from '@/components/ui';
 import { formatDate } from '@/lib/utils';
 
 export function ProjectsPage() {
@@ -15,6 +15,7 @@ export function ProjectsPage() {
   const [message, setMessage] = useState('');
 
   const { data, isLoading } = useQuery({ queryKey: ['projects'], queryFn: () => api.get<{ projects: Project[] }>('/projects') });
+  const metrics = useQuery({ queryKey: ['project-metrics'], queryFn: () => api.get<{ metrics: ProjectMetrics }>('/projects/metrics'), refetchInterval: 30_000 });
   const files = useQuery({
     queryKey: ['project-files', selected],
     queryFn: () => api.get<{ files: Array<{ path: string; language: string; size: number }> }>(`/projects/${selected}/files`),
@@ -29,6 +30,7 @@ export function ProjectsPage() {
       setDescription('');
       setMessage(`Created ${result.project.name}`);
       void queryClient.invalidateQueries({ queryKey: ['projects'] });
+      void queryClient.invalidateQueries({ queryKey: ['project-metrics'] });
     },
   });
 
@@ -41,6 +43,7 @@ export function ProjectsPage() {
     onSuccess: (result) => {
       setMessage(`Indexed project: ${JSON.stringify(result)}`);
       void queryClient.invalidateQueries({ queryKey: ['project-files', selected] });
+      void queryClient.invalidateQueries({ queryKey: ['project-metrics'] });
       void queryClient.invalidateQueries({ queryKey: ['overview'] });
     },
   });
@@ -48,6 +51,12 @@ export function ProjectsPage() {
   return (
     <>
       <PageHeader eyebrow="Project intelligence" title="Projects & Repositories" description="Create workspaces, index source files and make them available to the AI gateway and agents." />
+      <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Total projects" value={metrics.data?.metrics.totalProjects ?? 0} />
+        <StatCard label="Indexed projects" value={metrics.data?.metrics.indexedProjects ?? 0} tone="accent" />
+        <StatCard label="Indexed files" value={metrics.data?.metrics.indexedFiles ?? 0} />
+        <StatCard label="Updated (24h)" value={metrics.data?.metrics.updatedLast24h ?? 0} tone="mint" />
+      </div>
 
       <div className="grid gap-5 xl:grid-cols-3">
         <Card className="p-5">

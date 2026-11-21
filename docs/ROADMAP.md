@@ -24,6 +24,7 @@
 - Security scan metrics endpoint and Security Center telemetry cards.
 - Testing run metrics endpoint and Testing Lab telemetry cards.
 - Code review metrics endpoint and Review workspace telemetry cards.
+- Project metrics endpoint and Projects workspace telemetry cards.
 - React engineering console with all feature workspaces.
 - Vitest unit/integration tests, CI workflow and generated repository status report.
 
