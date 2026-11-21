@@ -110,6 +110,20 @@ export function createAgentRouter(context: AppContext): Router {
     response.json({ task, events, exportedAt: new Date().toISOString() });
   });
 
+  router.delete('/tasks/:id', async (request, response) => {
+    if (!request.actor!.roles.some((role) => role === 'owner' || role === 'admin')) {
+      throw new AppError('FORBIDDEN', 'Owner or admin role required');
+    }
+    const task = await context.orchestrator.tasks.get(request.actor!.organizationId, request.params.id);
+    if (!task) throw new AppError('NOT_FOUND', 'Task not found');
+    if (task.status === 'running' || task.status === 'awaiting_approval') {
+      throw new AppError('BAD_REQUEST', 'Cancel the task before deleting it');
+    }
+    await context.db.repositories.agentTasks.delete(task.id);
+    await audit(context, request, 'agent.task.delete', 'agent_task', task.id, { status: task.status });
+    response.json({ success: true });
+  });
+
   router.get('/events', (request, response) => {
     response.setHeader('Content-Type', 'text/event-stream');
     response.setHeader('Cache-Control', 'no-cache, no-transform');
