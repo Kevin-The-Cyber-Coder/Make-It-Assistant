@@ -34,6 +34,7 @@
 - Dashboard runtime health card with system status summary.
 - Authenticated system configuration summary endpoint and Settings panel.
 - Conversation export endpoint and AI Assistant export action.
+- Audit log filter suggestions from summary data.
 - React engineering console with all feature workspaces.
 - Vitest unit/integration tests, CI workflow and generated repository status report.
 
