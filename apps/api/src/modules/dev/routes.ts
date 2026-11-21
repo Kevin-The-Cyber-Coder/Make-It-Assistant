@@ -147,5 +147,16 @@ export function createDevRouter(context: AppContext): Router {
     });
   });
 
+  router.get('/testing/runs/:id/export', async (request, response) => {
+    const run = await context.db.repositories.testRuns.findById(request.params.id);
+    if (!run || run.organizationId !== request.actor!.organizationId) {
+      response.status(404).json({ error: { code: 'NOT_FOUND', message: 'Test run not found' } });
+      return;
+    }
+    await audit(context, request, 'testing.export', 'test_run', run.id, { generatedTests: run.generatedTests.length });
+    response.setHeader('Content-Disposition', `attachment; filename="test-run-${run.id}.json"`);
+    response.json({ run, exportedAt: new Date().toISOString() });
+  });
+
   return router;
 }
