@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Activity, CheckCircle2, Database, KeyRound, LogOut, Server, ShieldCheck } from 'lucide-react';
 import { api, clearTokens, getAccessToken } from '@/lib/api';
-import type { SystemStatus, SystemVersion } from '@/lib/types';
+import type { SystemConfig, SystemStatus, SystemVersion } from '@/lib/types';
 import { Badge, Button, Card, EmptyState, Input, PageHeader, Spinner } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
@@ -48,6 +48,11 @@ export function SettingsPage() {
   const version = useQuery({
     queryKey: ['system-version'],
     queryFn: () => api.get<SystemVersion>('/system/version'),
+    staleTime: 60_000,
+  });
+  const config = useQuery({
+    queryKey: ['system-config'],
+    queryFn: () => api.get<SystemConfig>('/system/config'),
     staleTime: 60_000,
   });
 
@@ -146,6 +151,33 @@ export function SettingsPage() {
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+          ) : null}
+        </Card>
+
+        <Card className="p-5 lg:col-span-2">
+          <div className="label mb-4"><Server className="mr-1 inline h-3.5 w-3.5" /> Configuration</div>
+          {config.isLoading ? <Spinner /> : config.error ? <div className="text-xs text-rose-300">{config.error instanceof Error ? config.error.message : 'System config unavailable'}</div> : config.data ? (
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 text-xs">
+              <div className="rounded-lg border border-white/5 bg-ink-950/50 p-3 space-y-1 text-slate-400">
+                <div className="flex justify-between"><span>Mongo</span><span className={config.data.mongo.configured ? 'text-mint' : 'text-slate-600'}>{config.data.mongo.configured ? 'configured' : 'disabled'}</span></div>
+                <div className="flex justify-between"><span>Redis</span><span className={config.data.redis.connected ? 'text-mint' : config.data.redis.configured ? 'text-amber-300' : 'text-slate-600'}>{config.data.redis.connected ? 'connected' : config.data.redis.configured ? 'configured' : 'disabled'}</span></div>
+                <div className="flex justify-between"><span>Sandbox</span><span className={config.data.sandbox.configured ? 'text-mint' : 'text-slate-600'}>{config.data.sandbox.configured ? 'configured' : 'disabled'}</span></div>
+              </div>
+              <div className="rounded-lg border border-white/5 bg-ink-950/50 p-3 space-y-1 text-slate-400">
+                <div className="flex justify-between"><span>GitHub OAuth</span><span className={config.data.github.oauthConfigured ? 'text-mint' : 'text-slate-600'}>{config.data.github.oauthConfigured ? 'configured' : 'disabled'}</span></div>
+                <div className="flex justify-between"><span>GitHub token</span><span className={config.data.github.serverTokenConfigured ? 'text-mint' : 'text-slate-600'}>{config.data.github.serverTokenConfigured ? 'configured' : 'missing'}</span></div>
+                <div className="flex justify-between"><span>OSV</span><span className={config.data.osv.enabled ? 'text-mint' : 'text-slate-600'}>{config.data.osv.enabled ? 'enabled' : 'disabled'}</span></div>
+              </div>
+              <div className="rounded-lg border border-white/5 bg-ink-950/50 p-3 space-y-1 text-slate-400">
+                <div className="flex justify-between"><span>Queue</span><span className="font-mono text-slate-200">{config.data.queue.mode}</span></div>
+                <div className="flex justify-between"><span>Rate limit</span><span className="font-mono text-slate-200">{config.data.rateLimit.mode}</span></div>
+                <div className="flex justify-between"><span>Storage</span><span className="font-mono text-slate-200">{config.data.storage.mode}</span></div>
+              </div>
+              <div className="rounded-lg border border-white/5 bg-ink-950/50 p-3 space-y-1 text-slate-400">
+                <div className="flex justify-between"><span>Providers</span><span className="font-mono text-slate-200">{config.data.providers.configured.length}/{config.data.providers.total}</span></div>
+                <div className="text-[11px] text-slate-600 break-words">{config.data.providers.configured.length ? config.data.providers.configured.join(', ') : 'local-rules only'}</div>
               </div>
             </div>
           ) : null}
