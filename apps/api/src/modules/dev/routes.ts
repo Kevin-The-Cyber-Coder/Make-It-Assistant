@@ -99,6 +99,21 @@ export function createDevRouter(context: AppContext): Router {
     response.json({ review, exportedAt: new Date().toISOString() });
   });
 
+  router.delete('/reviews/:id', async (request, response) => {
+    if (!request.actor!.roles.some((role) => role === 'owner' || role === 'admin')) {
+      response.status(403).json({ error: { code: 'FORBIDDEN', message: 'Owner or admin role required' } });
+      return;
+    }
+    const review = await context.db.repositories.codeReviews.findById(request.params.id);
+    if (!review || review.organizationId !== request.actor!.organizationId) {
+      response.status(404).json({ error: { code: 'NOT_FOUND', message: 'Review not found' } });
+      return;
+    }
+    await context.db.repositories.codeReviews.delete(review.id);
+    await audit(context, request, 'review.delete', 'code_review', review.id, { findings: review.findings.length });
+    response.json({ success: true });
+  });
+
   router.post('/testing/run', validate(testRunSchema), async (request, response) => {
     const input = request.body as ReturnType<typeof testRunSchema.parse>;
     const generatedTests = generateTests(toFiles(input.files), input.framework);
