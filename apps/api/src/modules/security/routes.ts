@@ -141,6 +141,21 @@ export function createSecurityRouter(context: AppContext): Router {
     response.json({ scan, risk: riskLevel(scan) });
   });
 
+  router.delete('/scans/:id', async (request, response) => {
+    if (!request.actor!.roles.some((role) => role === 'owner' || role === 'admin')) {
+      response.status(403).json({ error: { code: 'FORBIDDEN', message: 'Owner or admin role required' } });
+      return;
+    }
+    const scan = await context.db.repositories.securityScans.findById(request.params.id);
+    if (!scan || scan.organizationId !== request.actor!.organizationId) {
+      response.status(404).json({ error: { code: 'NOT_FOUND', message: 'Scan not found' } });
+      return;
+    }
+    await context.db.repositories.securityScans.delete(scan.id);
+    await audit(context, request, 'security.scan.delete', 'security_scan', scan.id, { findings: scan.findings.length });
+    response.json({ success: true });
+  });
+
   router.get('/owasp', (_request, response) => {
     response.json({ categories: OWASP_TOP_10 });
   });

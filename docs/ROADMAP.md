@@ -48,6 +48,7 @@
 - Audit log detail endpoint for organization-scoped audit entry retrieval.
 - GitHub repository connection detail endpoint for organization-scoped retrieval.
 - AI metrics endpoint for organization-scoped conversation and message counts.
+- Security scan delete endpoint with role and audit checks.
 - React engineering console with all feature workspaces.
 - Vitest unit/integration tests, CI workflow and generated repository status report.
 
