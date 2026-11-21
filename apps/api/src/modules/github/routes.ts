@@ -47,6 +47,21 @@ export function createGithubRouter(context: AppContext): Router {
     response.json({ repositories });
   });
 
+  router.get('/metrics', async (request, response) => {
+    const organizationId = request.actor!.organizationId;
+    const connectedRepositories = await context.db.repositories.repositories.count({ where: { organizationId } });
+    const sealed = readOAuthCookie(request);
+    const session = sealed ? openOAuthToken(context.env.JWT_SECRET, sealed) : null;
+    response.json({
+      metrics: {
+        connectedRepositories,
+        oauthConfigured: Boolean(context.env.GITHUB_CLIENT_ID && context.env.GITHUB_CLIENT_SECRET),
+        oauthConnected: Boolean(session?.accessToken),
+        serverTokenConfigured: Boolean(context.env.GITHUB_TOKEN),
+      },
+    });
+  });
+
   router.get('/repos/:owner/:name/commits', async (request, response) => {
     const client = clientFor(context, request);
     const commits = await client.listCommits(request.params.owner, request.params.name, request.query.branch as string | undefined);

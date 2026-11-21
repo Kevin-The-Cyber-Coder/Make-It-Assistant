@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Activity, Github, Link2, RefreshCw } from 'lucide-react';
 import { api, apiRequest } from '@/lib/api';
-import { Badge, Button, Card, EmptyState, Input, PageHeader, Spinner } from '@/components/ui';
+import type { GitHubMetrics } from '@/lib/types';
+import { Badge, Button, Card, EmptyState, Input, PageHeader, Spinner, StatCard } from '@/components/ui';
 import { formatDate } from '@/lib/utils';
 
 interface Repository {
@@ -68,6 +69,7 @@ export function GitHubPage() {
       expiresAt?: number;
     }>('/github/oauth/status'),
   });
+  const metrics = useQuery({ queryKey: ['github-metrics'], queryFn: () => api.get<{ metrics: GitHubMetrics }>('/github/metrics'), refetchInterval: 30_000 });
 
   function headers(): Record<string, string> {
     return token.trim() ? { 'X-GitHub-Token': token.trim() } : {};
@@ -90,6 +92,7 @@ export function GitHubPage() {
     try {
       await api.post('/github/oauth/disconnect');
       await queryClient.invalidateQueries({ queryKey: ['github-oauth-status'] });
+      await queryClient.invalidateQueries({ queryKey: ['github-metrics'] });
       setOauthNotice('GitHub account disconnected.');
     } catch (caught) {
       setNotice(caught instanceof Error ? caught.message : 'Could not disconnect GitHub');
@@ -123,6 +126,7 @@ export function GitHubPage() {
         body: JSON.stringify({ owner: owner.trim(), name: repoName.trim() }),
       });
       await queryClient.invalidateQueries({ queryKey: ['github-connections'] });
+      await queryClient.invalidateQueries({ queryKey: ['github-metrics'] });
       setNotice(`Connected ${owner}/${repoName}.`);
     } catch (caught) {
       setNotice(caught instanceof Error ? caught.message : 'Connection failed');
@@ -156,6 +160,12 @@ export function GitHubPage() {
         description="Connect repositories, inspect genuine commit and pull-request activity, and run defensive reviews on pull requests."
         actions={<Badge className="border-accent-400/30 bg-accent-500/10 text-accent-400"><Github className="mr-1 h-3 w-3" /> REST integration</Badge>}
       />
+      <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Connected repos" value={metrics.data?.metrics.connectedRepositories ?? 0} />
+        <StatCard label="OAuth configured" value={metrics.data?.metrics.oauthConfigured ? 'Yes' : 'No'} tone={metrics.data?.metrics.oauthConfigured ? 'mint' : 'default'} />
+        <StatCard label="OAuth connected" value={metrics.data?.metrics.oauthConnected ? 'Yes' : 'No'} tone={metrics.data?.metrics.oauthConnected ? 'accent' : 'default'} />
+        <StatCard label="Server token" value={metrics.data?.metrics.serverTokenConfigured ? 'Configured' : 'Missing'} tone={metrics.data?.metrics.serverTokenConfigured ? 'mint' : 'rose'} />
+      </div>
 
       <div className="grid gap-5 xl:grid-cols-[380px_1fr]">
         <div className="space-y-5">
