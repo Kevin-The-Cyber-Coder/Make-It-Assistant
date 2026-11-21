@@ -191,5 +191,20 @@ export function createDevRouter(context: AppContext): Router {
     response.json({ run, exportedAt: new Date().toISOString() });
   });
 
+  router.delete('/testing/runs/:id', async (request, response) => {
+    if (!request.actor!.roles.some((role) => role === 'owner' || role === 'admin')) {
+      response.status(403).json({ error: { code: 'FORBIDDEN', message: 'Owner or admin role required' } });
+      return;
+    }
+    const run = await context.db.repositories.testRuns.findById(request.params.id);
+    if (!run || run.organizationId !== request.actor!.organizationId) {
+      response.status(404).json({ error: { code: 'NOT_FOUND', message: 'Test run not found' } });
+      return;
+    }
+    await context.db.repositories.testRuns.delete(run.id);
+    await audit(context, request, 'testing.delete', 'test_run', run.id, { generatedTests: run.generatedTests.length });
+    response.json({ success: true });
+  });
+
   return router;
 }
