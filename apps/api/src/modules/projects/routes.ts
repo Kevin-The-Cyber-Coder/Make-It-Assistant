@@ -87,6 +87,20 @@ export function createProjectRouter(context: AppContext): Router {
     response.json({ project: await ownedProject(context, request, request.params.id) });
   });
 
+  router.get('/:id/export', async (request, response) => {
+    const project = await ownedProject(context, request, request.params.id);
+    const index = context.indexes.get(project.id);
+    const files = (index?.files ?? []).map((file) => ({ path: file.path, language: file.language, size: file.size }));
+    await audit(context, request, 'project.export', 'project', project.id, { files: files.length });
+    response.setHeader('Content-Disposition', `attachment; filename="project-${project.id}.json"`);
+    response.json({
+      project,
+      index: index ? { indexedAt: index.indexedAt, fileCount: index.files.length } : null,
+      files,
+      exportedAt: new Date().toISOString(),
+    });
+  });
+
   router.put('/:id', validate(projectUpdateSchema), async (request, response) => {
     const project = await ownedProject(context, request, request.params.id);
     const updated = await context.db.repositories.projects.update(project.id, {
