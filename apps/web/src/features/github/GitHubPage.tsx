@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Activity, Github, Link2, RefreshCw } from 'lucide-react';
+import { Activity, Github, Link2, RefreshCw, Trash2 } from 'lucide-react';
 import { api, apiRequest } from '@/lib/api';
 import type { GitHubMetrics } from '@/lib/types';
 import { Badge, Button, Card, EmptyState, Input, PageHeader, Spinner, StatCard } from '@/components/ui';
@@ -135,6 +135,21 @@ export function GitHubPage() {
     }
   }
 
+  async function disconnectConnection(repository: Repository) {
+    setBusy(true);
+    setNotice('');
+    try {
+      await apiRequest(`/github/connections/${repository.id}`, { method: 'DELETE' });
+      await queryClient.invalidateQueries({ queryKey: ['github-connections'] });
+      await queryClient.invalidateQueries({ queryKey: ['github-metrics'] });
+      setNotice(`Disconnected ${repository.owner}/${repository.name}.`);
+    } catch (caught) {
+      setNotice(caught instanceof Error ? caught.message : 'Disconnect failed');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function loadActivity(target: Repository) {
     setBusy(true);
     setNotice('');
@@ -221,10 +236,23 @@ export function GitHubPage() {
             {connections.data?.repositories.length ? (
               <div className="divide-y divide-white/5">
                 {connections.data.repositories.map((repository) => (
-                  <button key={repository.id} onClick={() => void loadActivity(repository)} className="block w-full px-5 py-3 text-left transition hover:bg-white/[0.02]">
-                    <div className="text-sm text-slate-200">{repository.owner}/{repository.name}</div>
-                    <div className="mt-1 text-[11px] text-slate-600">{repository.defaultBranch} · connected {formatDate(repository.createdAt)}</div>
-                  </button>
+                  <div key={repository.id} className="flex items-start gap-2 px-5 py-3 transition hover:bg-white/[0.02]">
+                    <button onClick={() => void loadActivity(repository)} className="min-w-0 flex-1 text-left">
+                      <div className="text-sm text-slate-200">{repository.owner}/{repository.name}</div>
+                      <div className="mt-1 text-[11px] text-slate-600">{repository.defaultBranch} · connected {formatDate(repository.createdAt)}</div>
+                    </button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0"
+                      disabled={busy}
+                      onClick={() => void disconnectConnection(repository)}
+                      aria-label={`Disconnect ${repository.owner}/${repository.name}`}
+                      title="Disconnect"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 ))}
               </div>
             ) : <EmptyState title="No connections" description="Connect a repository to begin." icon={<Github className="h-5 w-5" />} />}
