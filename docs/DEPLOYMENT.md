@@ -47,6 +47,7 @@ kubectl apply -k deploy/kubernetes
 - Set `MONGODB_URI` and `REDIS_URL` so replicas share state and rate limits. Without them each API replica falls back to its own JSON file or in-process stores.
 - Set `CLIENT_ORIGIN` and `GITHUB_OAUTH_REDIRECT_URI` to the real public origin.
 - Keep `SANDBOX_URL` empty unless the worker is deployed and `SANDBOX_TOKEN` is set. The worker is not a hardened multi-tenant boundary.
+- The API exposes `/healthz` for liveness and `/readyz` for readiness probes. The Kubernetes API deployment uses `/readyz` for readiness and `/healthz` for liveness.
 - The API runs TypeScript through `tsx` in the image. A compiled JavaScript image is preferable for a high-volume deployment.
 - Run behind TLS. Set `GITHUB_OAUTH_COOKIE_SAMESITE=none` only when the API and console are on different registrable domains, and only over HTTPS.
 
