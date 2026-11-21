@@ -2,6 +2,7 @@ import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YA
 import { Activity, Cpu, ShieldAlert } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import type { UsageMetrics } from '@/lib/types';
 import { Badge, Card, EmptyState, PageHeader, Spinner, StatCard } from '@/components/ui';
 import { formatDate } from '@/lib/utils';
 
@@ -18,6 +19,7 @@ interface UsageRecord {
 
 export function AnalyticsPage() {
   const usage = useQuery({ queryKey: ['usage'], queryFn: () => api.get<{ usage: UsageRecord[] }>('/analytics/usage'), refetchInterval: 30_000 });
+  const metrics = useQuery({ queryKey: ['usage-metrics'], queryFn: () => api.get<{ metrics: UsageMetrics }>('/analytics/metrics'), refetchInterval: 30_000 });
 
   if (usage.isLoading) return <div className="flex h-64 items-center justify-center"><Spinner className="h-6 w-6" /></div>;
   if (usage.error) return <EmptyState title="Analytics unavailable" description={usage.error instanceof Error ? usage.error.message : 'Could not load usage records.'} />;
@@ -44,11 +46,12 @@ export function AnalyticsPage() {
         description="Real model-usage records captured by the AI Gateway. Counters reflect only this workspace and this storage backend."
         actions={<Badge className="border-mint/30 bg-mint/10 text-mint"><Activity className="mr-1 h-3 w-3" /> live</Badge>}
       />
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="AI requests" value={records.length} />
-        <StatCard label="Tokens used" value={totalTokens.toLocaleString()} tone="accent" />
-        <StatCard label="Avg latency" value={`${avgLatency} ms`} tone="mint" />
-        <StatCard label="Providers" value={Object.keys(totals).length} />
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <StatCard label="AI requests" value={metrics.data?.metrics.totalRequests ?? records.length} />
+        <StatCard label="Tokens used" value={(metrics.data?.metrics.totalTokens ?? totalTokens).toLocaleString()} tone="accent" />
+        <StatCard label="Avg latency" value={`${metrics.data?.metrics.avgLatencyMs ?? avgLatency} ms`} tone="mint" />
+        <StatCard label="Success rate" value={`${Math.round((metrics.data?.metrics.successRate ?? 1) * 100)}%`} />
+        <StatCard label="Providers" value={Object.keys(metrics.data?.metrics.byProvider ?? totals).length} />
       </div>
 
       <Card className="mt-5 p-5">

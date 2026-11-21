@@ -70,5 +70,32 @@ export function createAnalyticsRouter(context: AppContext): Router {
     response.json({ usage });
   });
 
+  router.get('/metrics', async (request, response) => {
+    const usage = await context.db.repositories.modelUsage.find({
+      where: { organizationId: request.actor!.organizationId },
+      limit: 5000,
+    });
+    const byProvider: Record<string, number> = {};
+    let totalTokens = 0;
+    let latencyTotal = 0;
+    let successes = 0;
+    for (const record of usage) {
+      const tokens = record.promptTokens + record.completionTokens;
+      byProvider[record.provider] = (byProvider[record.provider] ?? 0) + tokens;
+      totalTokens += tokens;
+      latencyTotal += record.latencyMs;
+      if (record.success) successes += 1;
+    }
+    response.json({
+      metrics: {
+        totalRequests: usage.length,
+        totalTokens,
+        avgLatencyMs: usage.length ? Math.round(latencyTotal / usage.length) : 0,
+        successRate: usage.length ? Number((successes / usage.length).toFixed(3)) : 1,
+        byProvider,
+      },
+    });
+  });
+
   return router;
 }
