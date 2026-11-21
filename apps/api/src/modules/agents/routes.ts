@@ -28,11 +28,15 @@ export function createAgentRouter(context: AppContext): Router {
     const projectId = typeof request.query.projectId === 'string' ? request.query.projectId.trim() : '';
     const status = typeof request.query.status === 'string' ? request.query.status.trim() : '';
     const q = typeof request.query.q === 'string' ? request.query.q.trim().toLowerCase() : '';
+    const limitRaw = typeof request.query.limit === 'string' ? Number.parseInt(request.query.limit, 10) : 50;
+    const offsetRaw = typeof request.query.offset === 'string' ? Number.parseInt(request.query.offset, 10) : 0;
+    const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(limitRaw, 1), 200) : 50;
+    const offset = Number.isFinite(offsetRaw) ? Math.max(offsetRaw, 0) : 0;
     let tasks = await context.orchestrator.tasks.list(request.actor!.organizationId);
     if (projectId) tasks = tasks.filter((task) => task.projectId === projectId);
     if (status) tasks = tasks.filter((task) => task.status === status);
     if (q) tasks = tasks.filter((task) => task.objective.toLowerCase().includes(q));
-    response.json({ tasks });
+    response.json({ tasks: tasks.slice(offset, offset + limit), total: tasks.length, limit, offset });
   });
 
   router.get('/metrics', async (request, response) => {
