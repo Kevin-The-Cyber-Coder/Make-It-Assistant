@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Ban, Bot, Check, CirclePause, Download, Play, Radio, X } from 'lucide-react';
+import { Ban, Bot, Check, CirclePause, Download, Play, Radio, Trash2, X } from 'lucide-react';
 import { api, getAccessToken } from '@/lib/api';
 import type { AgentEvent, AgentMetrics, AgentTask } from '@/lib/types';
 import { Badge, Button, Card, EmptyState, PageHeader, Spinner, StatCard, Textarea } from '@/components/ui';
@@ -89,6 +89,19 @@ export function AgentConsolePage() {
     }
   }
 
+  async function deleteTask() {
+    if (!selected) return;
+    try {
+      await api.delete(`/agents/tasks/${selected}`);
+      setSelected(null);
+      setNotice('Task deleted');
+      void queryClient.invalidateQueries({ queryKey: ['agent-tasks'] });
+      void queryClient.invalidateQueries({ queryKey: ['agent-metrics'] });
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Delete failed');
+    }
+  }
+
   const active = tasks.data?.tasks.find((task) => task.id === selected);
   const combinedEvents = [...(events.data?.events ?? []), ...liveEvents.filter((event) => event.taskId === selected)]
     .filter((event, index, array) => array.findIndex((item) => item.id === event.id) === index)
@@ -144,6 +157,7 @@ export function AgentConsolePage() {
                   <Badge className={statusTone[active.status]}>{active.status.replace('_', ' ')}</Badge>
                   <Button size="sm" variant="outline" onClick={() => void exportTask()}><Download className="h-3.5 w-3.5" /> Export</Button>
                   <Button size="sm" variant="danger" onClick={() => void cancel()}><Ban className="h-3.5 w-3.5" /> Cancel</Button>
+                  <Button size="sm" variant="danger" onClick={() => void deleteTask()} disabled={active.status === 'running' || active.status === 'awaiting_approval'}><Trash2 className="h-3.5 w-3.5" /> Delete</Button>
                 </div>
               )}
             </div>
