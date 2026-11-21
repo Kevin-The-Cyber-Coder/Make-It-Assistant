@@ -29,6 +29,7 @@
 - GitHub integration metrics endpoint and workspace telemetry cards.
 - Agent queue visibility card in the Agent Console.
 - Usage metrics endpoint and Analytics success-rate telemetry.
+- Authenticated system version endpoint and Settings version display.
 - React engineering console with all feature workspaces.
 - Vitest unit/integration tests, CI workflow and generated repository status report.
 
