@@ -58,7 +58,7 @@
 - Project test runs endpoint for organization-scoped project test run retrieval.
 - Project agent tasks endpoint for organization-scoped project task retrieval.
 - Project summary endpoint for organization-scoped project resource counts.
-- Security scan list project and status filters for organization-scoped scan queries.
+- Security scan list project, status, and text filters for organization-scoped scan queries.
 - Code review list project and text filters for organization-scoped review queries.
 - Test run list project, status, framework, and text filters for organization-scoped test run queries.
 - Project list text search filter for organization-scoped project queries.
