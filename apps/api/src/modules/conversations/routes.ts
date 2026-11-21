@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { randomUUID } from 'node:crypto';
-import { AppError, conversationCreateSchema, paginationSchema } from '@make-it-ai/shared';
+import { AppError, conversationCreateSchema, conversationUpdateSchema, paginationSchema } from '@make-it-ai/shared';
 import type { Conversation } from '@make-it-ai/shared';
 import type { AppContext } from '../../context';
 import { audit } from '../../lib/audit';
@@ -62,6 +62,20 @@ export function createConversationRouter(context: AppContext): Router {
       throw new AppError('NOT_FOUND', 'Conversation not found');
     }
     response.json({ conversation });
+  });
+
+  router.patch('/:id', validate(conversationUpdateSchema), async (request, response) => {
+    const conversation = await context.db.repositories.conversations.findById(request.params.id);
+    if (!conversation || conversation.organizationId !== request.actor!.organizationId) {
+      throw new AppError('NOT_FOUND', 'Conversation not found');
+    }
+    const input = request.body as ReturnType<typeof conversationUpdateSchema.parse>;
+    const updated = await context.db.repositories.conversations.update(conversation.id, {
+      title: input.title,
+      updatedAt: new Date().toISOString(),
+    });
+    await audit(context, request, 'conversation.update', 'conversation', conversation.id, { title: input.title });
+    response.json({ conversation: updated ?? { ...conversation, title: input.title, updatedAt: new Date().toISOString() } });
   });
 
   router.get('/:id/messages', async (request, response) => {

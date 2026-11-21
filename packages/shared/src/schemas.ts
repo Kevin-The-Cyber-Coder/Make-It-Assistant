@@ -32,6 +32,10 @@ export const conversationCreateSchema = z.object({
   projectId: z.string().optional(),
 });
 
+export const conversationUpdateSchema = z.object({
+  title: z.string().trim().min(1).max(160),
+});
+
 export const chatSchema = z.object({
   conversationId: z.string().optional(),
   projectId: z.string().optional(),
