@@ -80,6 +80,13 @@ export interface SecurityMetrics {
   } | null;
 }
 
+export interface TestingMetrics {
+  totalRuns: number;
+  byStatus: Record<string, number>;
+  generatedTests: number;
+  latestRun: { id: string; status: string; framework: string; createdAt: string } | null;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
