@@ -38,6 +38,7 @@
 - Security scan export endpoint and Security Center export action.
 - Agent task export endpoint and Agent Console export action.
 - Code review export endpoint and Review workspace export action.
+- Test run export endpoint and Testing Lab export action.
 - React engineering console with all feature workspaces.
 - Vitest unit/integration tests, CI workflow and generated repository status report.
 
