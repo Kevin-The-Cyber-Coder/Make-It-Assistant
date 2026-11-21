@@ -48,7 +48,7 @@
 - Audit log detail endpoint for organization-scoped audit entry retrieval.
 - GitHub repository connection detail endpoint for organization-scoped retrieval.
 - AI metrics endpoint for organization-scoped conversation and message counts.
-- Security scan delete endpoint with role and audit checks.
+- Security scan delete endpoint with role and audit checks, and Security Center delete action.
 - Code review delete endpoint with role and audit checks.
 - Test run delete endpoint with role and audit checks.
 - Agent task delete endpoint with role and audit checks.

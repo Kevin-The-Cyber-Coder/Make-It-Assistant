@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Download, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { Download, ShieldAlert, ShieldCheck, Trash2 } from 'lucide-react';
 import { api, getAccessToken } from '@/lib/api';
 import type { SecurityFinding, SecurityMetrics, SecurityScan } from '@/lib/types';
 import { Badge, Button, Card, EmptyState, PageHeader, StatCard, Textarea } from '@/components/ui';
@@ -76,6 +76,18 @@ export function SecurityPage() {
     }
   }
 
+  async function deleteScan() {
+    if (!scan) return;
+    setError('');
+    try {
+      await api.delete(`/security/scans/${scan.id}`);
+      setScan(null);
+      void metrics.refetch();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Delete failed');
+    }
+  }
+
   const findings: SecurityFinding[] = scan?.findings ?? [];
 
   return (
@@ -104,7 +116,7 @@ export function SecurityPage() {
         </Card>
         <div className="space-y-5">
           <Card>
-            <div className="panel-header"><div className="label">Findings</div><div className="flex items-center gap-2">{scan && <Button variant="outline" size="sm" onClick={() => void exportScan()}><Download className="h-3.5 w-3.5" /> Export</Button>}<Badge>{findings.length}</Badge></div></div>
+            <div className="panel-header"><div className="label">Findings</div><div className="flex items-center gap-2">{scan && <><Button variant="outline" size="sm" onClick={() => void exportScan()}><Download className="h-3.5 w-3.5" /> Export</Button><Button variant="danger" size="sm" onClick={() => void deleteScan()}><Trash2 className="h-3.5 w-3.5" /> Delete</Button></>}<Badge>{findings.length}</Badge></div></div>
             {findings.length ? (
               <div className="max-h-[520px] divide-y divide-white/5 overflow-y-auto">
                 {findings.map((finding) => (
