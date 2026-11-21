@@ -27,13 +27,25 @@ export function createProjectRouter(context: AppContext): Router {
 
   router.get('/', async (request, response) => {
     const query = paginationSchema.parse(request.query);
+    const q = typeof request.query.q === 'string' ? request.query.q.trim().toLowerCase() : '';
+    const where = { organizationId: request.actor!.organizationId };
+    if (q) {
+      const all = await context.db.repositories.projects.find({
+        where,
+        sort: { field: 'updatedAt', direction: 'desc' },
+        limit: 1000,
+      });
+      const filtered = all.filter((project) => `${project.name} ${project.description ?? ''}`.toLowerCase().includes(q));
+      response.json({ projects: filtered.slice(query.offset, query.offset + query.limit), total: filtered.length });
+      return;
+    }
     const projects = await context.db.repositories.projects.find({
-      where: { organizationId: request.actor!.organizationId },
+      where,
       sort: { field: 'updatedAt', direction: 'desc' },
       limit: query.limit,
       offset: query.offset,
     });
-    response.json({ projects, total: await context.db.repositories.projects.count({ where: { organizationId: request.actor!.organizationId } }) });
+    response.json({ projects, total: await context.db.repositories.projects.count({ where }) });
   });
 
   router.get('/metrics', async (request, response) => {
