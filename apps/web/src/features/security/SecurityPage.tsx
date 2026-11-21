@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ShieldAlert, ShieldCheck } from 'lucide-react';
 import { api } from '@/lib/api';
-import type { SecurityFinding, SecurityScan } from '@/lib/types';
+import type { SecurityFinding, SecurityMetrics, SecurityScan } from '@/lib/types';
 import { Badge, Button, Card, EmptyState, PageHeader, StatCard, Textarea } from '@/components/ui';
 import { severityClass } from '@/lib/utils';
 
@@ -16,6 +16,7 @@ export function SecurityPage() {
   const [advisoryNote, setAdvisoryNote] = useState('');
 
   const owasp = useQuery({ queryKey: ['owasp'], queryFn: () => api.get<{ categories: Array<{ id: string; name: string; guidance: string; checks: string[] }> }>('/security/owasp') });
+  const metrics = useQuery({ queryKey: ['security-metrics'], queryFn: () => api.get<{ metrics: SecurityMetrics }>('/security/metrics'), refetchInterval: 30_000 });
 
   async function runScan() {
     setBusy(true);
@@ -61,6 +62,12 @@ export function SecurityPage() {
         {(['critical', 'high', 'medium', 'low', 'info'] as const).map((severity) => (
           <StatCard key={severity} label={severity} value={scan?.summary?.[severity] ?? 0} tone={severity === 'critical' ? 'rose' : severity === 'high' ? 'accent' : 'default'} />
         ))}
+      </div>
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Total scans" value={metrics.data?.metrics.totalScans ?? 0} />
+        <StatCard label="Scans (24h)" value={metrics.data?.metrics.scansLast24h ?? 0} tone="accent" />
+        <StatCard label="Cumulative critical" value={metrics.data?.metrics.cumulativeFindingsBySeverity.critical ?? 0} tone="rose" />
+        <StatCard label="Latest risk" value={metrics.data?.metrics.latestScan?.risk ?? '—'} tone="mint" />
       </div>
       <div className="mt-5 grid gap-5 xl:grid-cols-[420px_1fr]">
         <Card className="p-5">
