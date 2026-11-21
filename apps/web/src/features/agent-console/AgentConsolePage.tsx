@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Ban, Bot, Check, CirclePause, Play, Radio, X } from 'lucide-react';
+import { Ban, Bot, Check, CirclePause, Download, Play, Radio, X } from 'lucide-react';
 import { api, getAccessToken } from '@/lib/api';
 import type { AgentEvent, AgentMetrics, AgentTask } from '@/lib/types';
 import { Badge, Button, Card, EmptyState, PageHeader, Spinner, StatCard, Textarea } from '@/components/ui';
@@ -67,6 +67,28 @@ export function AgentConsolePage() {
     void queryClient.invalidateQueries({ queryKey: ['agent-tasks'] });
   }
 
+  async function exportTask() {
+    if (!selected) return;
+    try {
+      const base = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api/v1';
+      const token = getAccessToken();
+      const response = await fetch(`${base}/agents/tasks/${selected}/export`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error(`Export failed (${response.status})`);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `agent-task-${selected}.json`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Export failed');
+    }
+  }
+
   const active = tasks.data?.tasks.find((task) => task.id === selected);
   const combinedEvents = [...(events.data?.events ?? []), ...liveEvents.filter((event) => event.taskId === selected)]
     .filter((event, index, array) => array.findIndex((item) => item.id === event.id) === index)
@@ -120,6 +142,7 @@ export function AgentConsolePage() {
               {active && (
                 <div className="flex gap-2">
                   <Badge className={statusTone[active.status]}>{active.status.replace('_', ' ')}</Badge>
+                  <Button size="sm" variant="outline" onClick={() => void exportTask()}><Download className="h-3.5 w-3.5" /> Export</Button>
                   <Button size="sm" variant="danger" onClick={() => void cancel()}><Ban className="h-3.5 w-3.5" /> Cancel</Button>
                 </div>
               )}
