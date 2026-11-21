@@ -35,6 +35,7 @@
 - Authenticated system configuration summary endpoint and Settings panel.
 - Conversation export endpoint and AI Assistant export action.
 - Audit log filter suggestions from summary data.
+- Security scan export endpoint and Security Center export action.
 - React engineering console with all feature workspaces.
 - Vitest unit/integration tests, CI workflow and generated repository status report.
 
