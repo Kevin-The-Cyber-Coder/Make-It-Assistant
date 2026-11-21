@@ -36,6 +36,34 @@ export function createProjectRouter(context: AppContext): Router {
     response.json({ projects, total: await context.db.repositories.projects.count({ where: { organizationId: request.actor!.organizationId } }) });
   });
 
+  router.get('/metrics', async (request, response) => {
+    const projects = await context.db.repositories.projects.find({
+      where: { organizationId: request.actor!.organizationId },
+      limit: 1000,
+    });
+    const now = Date.now();
+    const dayAgo = now - 24 * 60 * 60 * 1000;
+    let indexedProjects = 0;
+    let indexedFiles = 0;
+    let updatedLast24h = 0;
+    for (const project of projects) {
+      const index = context.indexes.get(project.id);
+      if (index) {
+        indexedProjects += 1;
+        indexedFiles += index.files.length;
+      }
+      if (Date.parse(project.updatedAt) >= dayAgo) updatedLast24h += 1;
+    }
+    response.json({
+      metrics: {
+        totalProjects: projects.length,
+        indexedProjects,
+        indexedFiles,
+        updatedLast24h,
+      },
+    });
+  });
+
   router.post('/', validate(projectCreateSchema), async (request, response) => {
     const input = request.body as ReturnType<typeof projectCreateSchema.parse>;
     const now = new Date().toISOString();
