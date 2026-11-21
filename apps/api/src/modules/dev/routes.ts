@@ -54,6 +54,31 @@ export function createDevRouter(context: AppContext): Router {
     response.json({ reviews });
   });
 
+  router.get('/reviews/metrics', async (request, response) => {
+    const reviews = await context.db.repositories.codeReviews.find({
+      where: { organizationId: request.actor!.organizationId },
+      sort: { field: 'createdAt', direction: 'desc' },
+      limit: 500,
+    });
+    const bySeverity: Record<string, number> = {};
+    let totalFindings = 0;
+    for (const review of reviews) {
+      for (const finding of review.findings) {
+        bySeverity[finding.severity] = (bySeverity[finding.severity] ?? 0) + 1;
+        totalFindings += 1;
+      }
+    }
+    const latest = reviews[0];
+    response.json({
+      metrics: {
+        totalReviews: reviews.length,
+        totalFindings,
+        bySeverity,
+        latestReview: latest ? { id: latest.id, title: latest.title, findings: latest.findings.length, createdAt: latest.createdAt } : null,
+      },
+    });
+  });
+
   router.post('/testing/run', validate(testRunSchema), async (request, response) => {
     const input = request.body as ReturnType<typeof testRunSchema.parse>;
     const generatedTests = generateTests(toFiles(input.files), input.framework);
