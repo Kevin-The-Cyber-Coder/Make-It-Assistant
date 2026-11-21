@@ -47,13 +47,15 @@ export function createDevRouter(context: AppContext): Router {
 
   router.get('/reviews', async (request, response) => {
     const projectId = typeof request.query.projectId === 'string' ? request.query.projectId.trim() : '';
+    const q = typeof request.query.q === 'string' ? request.query.q.trim().toLowerCase() : '';
     const where: Record<string, string> = { organizationId: request.actor!.organizationId };
     if (projectId) where.projectId = projectId;
-    const reviews = await context.db.repositories.codeReviews.find({
+    let reviews = await context.db.repositories.codeReviews.find({
       where,
       sort: { field: 'createdAt', direction: 'desc' },
-      limit: 50,
+      limit: q ? 500 : 50,
     });
+    if (q) reviews = reviews.filter((review) => `${review.title} ${review.summary}`.toLowerCase().includes(q)).slice(0, 50);
     response.json({ reviews });
   });
 

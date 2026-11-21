@@ -59,7 +59,7 @@
 - Project agent tasks endpoint for organization-scoped project task retrieval.
 - Project summary endpoint for organization-scoped project resource counts.
 - Security scan list project and status filters for organization-scoped scan queries.
-- Code review list project filter for organization-scoped review queries.
+- Code review list project and text filters for organization-scoped review queries.
 - Test run list project and status filters for organization-scoped test run queries.
 - Project list text search filter for organization-scoped project queries.
 - Agent task list project, status, and text filters for organization-scoped task queries.
