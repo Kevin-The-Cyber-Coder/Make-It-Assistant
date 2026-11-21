@@ -47,6 +47,7 @@
 - GitHub repository connection delete endpoint with role and audit checks, and GitHub console disconnect action.
 - Audit log detail endpoint for organization-scoped audit entry retrieval.
 - GitHub repository connection detail endpoint for organization-scoped retrieval.
+- AI metrics endpoint for organization-scoped conversation and message counts.
 - React engineering console with all feature workspaces.
 - Vitest unit/integration tests, CI workflow and generated repository status report.
 
