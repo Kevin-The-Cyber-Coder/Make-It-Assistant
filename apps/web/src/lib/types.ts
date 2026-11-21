@@ -108,6 +108,13 @@ export interface ConversationMetrics {
   avgMessagesPerConversation: number;
 }
 
+export interface GitHubMetrics {
+  connectedRepositories: number;
+  oauthConfigured: boolean;
+  oauthConnected: boolean;
+  serverTokenConfigured: boolean;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
