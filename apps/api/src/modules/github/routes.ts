@@ -40,10 +40,12 @@ export function createGithubRouter(context: AppContext): Router {
   });
 
   router.get('/connections', async (request, response) => {
-    const repositories = await context.db.repositories.repositories.find({
+    const q = typeof request.query.q === 'string' ? request.query.q.trim().toLowerCase() : '';
+    let repositories = await context.db.repositories.repositories.find({
       where: { organizationId: request.actor!.organizationId },
       sort: { field: 'createdAt', direction: 'desc' },
     });
+    if (q) repositories = repositories.filter((repository) => `${repository.owner} ${repository.name}`.toLowerCase().includes(q));
     response.json({ repositories });
   });
 
