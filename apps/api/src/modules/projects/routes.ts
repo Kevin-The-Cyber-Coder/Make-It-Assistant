@@ -181,6 +181,16 @@ export function createProjectRouter(context: AppContext): Router {
     response.json({ reviews });
   });
 
+  router.get('/:id/test-runs', async (request, response) => {
+    const project = await ownedProject(context, request, request.params.id);
+    const runs = await context.db.repositories.testRuns.find({
+      where: { organizationId: request.actor!.organizationId, projectId: project.id },
+      sort: { field: 'createdAt', direction: 'desc' },
+      limit: 100,
+    });
+    response.json({ runs });
+  });
+
   router.get('/:id/files', async (request, response) => {
     await ownedProject(context, request, request.params.id);
     const index = context.indexes.get(request.params.id);
