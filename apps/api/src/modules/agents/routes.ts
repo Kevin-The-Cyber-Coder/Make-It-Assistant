@@ -101,6 +101,15 @@ export function createAgentRouter(context: AppContext): Router {
     response.json({ events });
   });
 
+  router.get('/tasks/:id/export', async (request, response) => {
+    const task = await context.orchestrator.tasks.get(request.actor!.organizationId, request.params.id);
+    if (!task) throw new AppError('NOT_FOUND', 'Task not found');
+    const events = await context.orchestrator.tasks.events(request.actor!.organizationId, request.params.id);
+    await audit(context, request, 'agent.task.export', 'agent_task', task.id, { events: events.length });
+    response.setHeader('Content-Disposition', `attachment; filename="agent-task-${task.id}.json"`);
+    response.json({ task, events, exportedAt: new Date().toISOString() });
+  });
+
   router.get('/events', (request, response) => {
     response.setHeader('Content-Type', 'text/event-stream');
     response.setHeader('Cache-Control', 'no-cache, no-transform');
