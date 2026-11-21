@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { FlaskConical } from 'lucide-react';
 import { api } from '@/lib/api';
-import { Badge, Button, Card, EmptyState, PageHeader, Textarea } from '@/components/ui';
+import type { TestingMetrics } from '@/lib/types';
+import { Badge, Button, Card, EmptyState, PageHeader, StatCard, Textarea } from '@/components/ui';
 import { formatDate } from '@/lib/utils';
 
 interface TestRun {
@@ -21,6 +22,7 @@ export function TestingPage() {
   const [run, setRun] = useState<TestRun | null>(null);
   const [error, setError] = useState('');
   const runs = useQuery({ queryKey: ['test-runs'], queryFn: () => api.get<{ runs: TestRun[] }>('/dev/testing/runs') });
+  const metrics = useQuery({ queryKey: ['testing-metrics'], queryFn: () => api.get<{ metrics: TestingMetrics }>('/dev/testing/metrics'), refetchInterval: 30_000 });
 
   async function generate() {
     setError('');
@@ -29,6 +31,7 @@ export function TestingPage() {
       const result = await api.post<{ run: TestRun }>('/dev/testing/run', { files, framework: 'vitest' });
       setRun(result.run);
       void runs.refetch();
+      void metrics.refetch();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Generation failed');
     }
@@ -37,6 +40,12 @@ export function TestingPage() {
   return (
     <>
       <PageHeader eyebrow="Quality intelligence" title="Testing Lab" description="Generate framework-appropriate test skeletons. Execution is gated behind an approved isolated sandbox worker." />
+      <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Total runs" value={metrics.data?.metrics.totalRuns ?? 0} />
+        <StatCard label="Generated tests" value={metrics.data?.metrics.generatedTests ?? 0} tone="accent" />
+        <StatCard label="Skipped" value={metrics.data?.metrics.byStatus.skipped ?? 0} />
+        <StatCard label="Latest framework" value={metrics.data?.metrics.latestRun?.framework ?? '—'} tone="mint" />
+      </div>
       <div className="grid gap-5 xl:grid-cols-[420px_1fr]">
         <Card className="p-5">
           <div className="label mb-3">Source files</div>
