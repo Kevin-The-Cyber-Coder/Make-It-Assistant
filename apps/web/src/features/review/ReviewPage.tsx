@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Download, GitPullRequest } from 'lucide-react';
+import { Download, GitPullRequest, Trash2 } from 'lucide-react';
 import { api, getAccessToken } from '@/lib/api';
 import type { ReviewFinding, ReviewMetrics } from '@/lib/types';
 import { Badge, Button, Card, EmptyState, PageHeader, StatCard, Textarea } from '@/components/ui';
@@ -59,6 +59,19 @@ export function ReviewPage() {
     }
   }
 
+  async function deleteReview() {
+    if (!review) return;
+    setError('');
+    try {
+      await api.delete(`/dev/reviews/${review.id}`);
+      setReview(null);
+      void history.refetch();
+      void metrics.refetch();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Delete failed');
+    }
+  }
+
   return (
     <>
       <PageHeader eyebrow="Quality intelligence" title="Code Reviews" description="Rule-based review findings with severity, location and suggested corrections. GitHub PR reviews use the same engine." />
@@ -86,7 +99,7 @@ export function ReviewPage() {
           </div>
         </Card>
         <Card>
-          <div className="panel-header"><div className="label">Review output</div>{review && <div className="flex items-center gap-2"><Button variant="outline" size="sm" onClick={() => void exportReview()}><Download className="h-3.5 w-3.5" /> Export</Button><Badge>{review.findings.length} findings</Badge></div>}</div>
+          <div className="panel-header"><div className="label">Review output</div>{review && <div className="flex items-center gap-2"><Button variant="outline" size="sm" onClick={() => void exportReview()}><Download className="h-3.5 w-3.5" /> Export</Button><Button variant="danger" size="sm" onClick={() => void deleteReview()}><Trash2 className="h-3.5 w-3.5" /> Delete</Button><Badge>{review.findings.length} findings</Badge></div>}</div>
           {review ? (
             <>
               <div className="border-b border-white/5 px-5 py-4 text-sm text-slate-300">{review.summary}</div>
