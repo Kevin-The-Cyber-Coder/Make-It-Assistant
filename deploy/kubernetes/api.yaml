@@ -25,7 +25,7 @@ spec:
                 name: mia-secrets
           readinessProbe:
             httpGet:
-              path: /healthz
+              path: /readyz
               port: 4000
             initialDelaySeconds: 10
             periodSeconds: 10
