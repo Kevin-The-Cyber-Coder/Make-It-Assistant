@@ -87,6 +87,13 @@ export interface TestingMetrics {
   latestRun: { id: string; status: string; framework: string; createdAt: string } | null;
 }
 
+export interface ReviewMetrics {
+  totalReviews: number;
+  totalFindings: number;
+  bySeverity: Record<string, number>;
+  latestReview: { id: string; title: string; findings: number; createdAt: string } | null;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
