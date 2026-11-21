@@ -88,5 +88,28 @@ export function createDevRouter(context: AppContext): Router {
     response.json({ runs });
   });
 
+  router.get('/testing/metrics', async (request, response) => {
+    const runs = await context.db.repositories.testRuns.find({
+      where: { organizationId: request.actor!.organizationId },
+      sort: { field: 'createdAt', direction: 'desc' },
+      limit: 500,
+    });
+    const byStatus: Record<string, number> = {};
+    let generatedTests = 0;
+    for (const run of runs) {
+      byStatus[run.status] = (byStatus[run.status] ?? 0) + 1;
+      generatedTests += run.generatedTests.length;
+    }
+    const latest = runs[0];
+    response.json({
+      metrics: {
+        totalRuns: runs.length,
+        byStatus,
+        generatedTests,
+        latestRun: latest ? { id: latest.id, status: latest.status, framework: latest.framework, createdAt: latest.createdAt } : null,
+      },
+    });
+  });
+
   return router;
 }
