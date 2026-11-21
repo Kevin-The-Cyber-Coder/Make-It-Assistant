@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Activity, CheckCircle2, Database, KeyRound, LogOut, Server, ShieldCheck } from 'lucide-react';
 import { api, clearTokens, getAccessToken } from '@/lib/api';
-import type { SystemStatus } from '@/lib/types';
+import type { SystemStatus, SystemVersion } from '@/lib/types';
 import { Badge, Button, Card, EmptyState, Input, PageHeader, Spinner } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
@@ -45,6 +45,11 @@ export function SettingsPage() {
     queryFn: () => api.get<SystemStatus>('/system/status'),
     refetchInterval: 30_000,
   });
+  const version = useQuery({
+    queryKey: ['system-version'],
+    queryFn: () => api.get<SystemVersion>('/system/version'),
+    staleTime: 60_000,
+  });
 
   async function saveGithubToken() {
     if (!token.trim()) return;
@@ -69,6 +74,8 @@ export function SettingsPage() {
             <dl className="space-y-3 text-sm">
               <div className="flex justify-between"><dt className="text-slate-500">Status</dt><dd className="font-mono text-mint">{health.data?.status}</dd></div>
               <div className="flex justify-between"><dt className="text-slate-500">Service</dt><dd className="font-mono text-slate-200">{health.data?.service}</dd></div>
+              <div className="flex justify-between"><dt className="text-slate-500">Version</dt><dd className="font-mono text-slate-200">{version.data?.version ?? '—'}</dd></div>
+              <div className="flex justify-between"><dt className="text-slate-500">Commit</dt><dd className="font-mono text-xs text-slate-200">{version.data?.commit ? version.data.commit.slice(0, 12) : '—'}</dd></div>
               <div className="flex justify-between"><dt className="text-slate-500">Storage</dt><dd className="font-mono text-slate-200">{health.data?.storage}</dd></div>
               <div className="flex justify-between"><dt className="text-slate-500">Configured providers</dt><dd className="font-mono text-slate-200">{health.data?.providers.join(', ') || 'local-rules only'}</dd></div>
               <div className="flex justify-between"><dt className="text-slate-500">Last check</dt><dd className="font-mono text-xs text-slate-500">{health.data?.timestamp}</dd></div>
