@@ -131,9 +131,12 @@ export function AuditLogPage() {
             <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-600" />
             <Input className="pl-9" placeholder="Search action, resource, actor, IP or metadata" value={filters.q} onChange={(event) => updateFilter('q', event.target.value)} />
           </div>
-          <Input placeholder="Action" value={filters.action} onChange={(event) => updateFilter('action', event.target.value)} />
-          <Input placeholder="Resource" value={filters.resource} onChange={(event) => updateFilter('resource', event.target.value)} />
-          <Input placeholder="Actor ID" value={filters.actorId} onChange={(event) => updateFilter('actorId', event.target.value)} />
+          <Input placeholder="Action" list="audit-actions" value={filters.action} onChange={(event) => updateFilter('action', event.target.value)} />
+          <Input placeholder="Resource" list="audit-resources" value={filters.resource} onChange={(event) => updateFilter('resource', event.target.value)} />
+          <Input placeholder="Actor ID" list="audit-actors" value={filters.actorId} onChange={(event) => updateFilter('actorId', event.target.value)} />
+          <datalist id="audit-actions">{stats?.byAction.map((item) => <option key={item.name} value={item.name} />)}</datalist>
+          <datalist id="audit-resources">{stats?.byResource.map((item) => <option key={item.name} value={item.name} />)}</datalist>
+          <datalist id="audit-actors">{stats?.byActor.map((item) => <option key={item.name} value={item.name} />)}</datalist>
           <Button variant="ghost" size="sm" onClick={() => { setFilters(EMPTY_FILTERS); setSelectedId(null); }}>Clear</Button>
         </div>
       </Card>
