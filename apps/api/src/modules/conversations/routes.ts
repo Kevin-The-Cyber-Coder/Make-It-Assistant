@@ -20,6 +20,25 @@ export function createConversationRouter(context: AppContext): Router {
     response.json({ conversations });
   });
 
+  router.get('/metrics', async (request, response) => {
+    const organizationId = request.actor!.organizationId;
+    const [conversations, messages] = await Promise.all([
+      context.db.repositories.conversations.find({ where: { organizationId }, limit: 2000 }),
+      context.db.repositories.messages.find({ where: { organizationId }, limit: 5000 }),
+    ]);
+    const now = Date.now();
+    const dayAgo = now - 24 * 60 * 60 * 1000;
+    const activeLast24h = conversations.filter((conversation) => Date.parse(conversation.updatedAt) >= dayAgo).length;
+    response.json({
+      metrics: {
+        totalConversations: conversations.length,
+        totalMessages: messages.length,
+        activeLast24h,
+        avgMessagesPerConversation: conversations.length ? Number((messages.length / conversations.length).toFixed(1)) : 0,
+      },
+    });
+  });
+
   router.post('/', validate(conversationCreateSchema), async (request, response) => {
     const input = request.body as ReturnType<typeof conversationCreateSchema.parse>;
     const now = new Date().toISOString();

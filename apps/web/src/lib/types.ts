@@ -101,6 +101,13 @@ export interface ProjectMetrics {
   updatedLast24h: number;
 }
 
+export interface ConversationMetrics {
+  totalConversations: number;
+  totalMessages: number;
+  activeLast24h: number;
+  avgMessagesPerConversation: number;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
