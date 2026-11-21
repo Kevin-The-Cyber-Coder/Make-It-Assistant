@@ -16,7 +16,7 @@
 - Token-level usage accounting for SSE streams with explicit estimated/provider-reported labels.
 - Container images, Compose services and Kubernetes manifests for deployment templates.
 - Optional live OSV advisory lookup layered over the offline dependency heuristics.
-- Organization-scoped audit log query API and console viewer with filters, summaries and export.
+- Organization-scoped audit log query API and console viewer with filters, summaries, and JSON/CSV export.
 - Organization-scoped global search API wired into the console command palette.
 - Authenticated system status endpoint and Settings runtime diagnostics panel.
 - Readiness endpoint (`/readyz`) with storage/Redis checks for deployment probes.
