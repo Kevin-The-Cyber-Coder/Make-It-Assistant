@@ -201,6 +201,29 @@ export function createProjectRouter(context: AppContext): Router {
     response.json({ tasks });
   });
 
+  router.get('/:id/summary', async (request, response) => {
+    const project = await ownedProject(context, request, request.params.id);
+    const where = { organizationId: request.actor!.organizationId, projectId: project.id };
+    const [conversations, scans, reviews, testRuns, tasks] = await Promise.all([
+      context.db.repositories.conversations.count({ where }),
+      context.db.repositories.securityScans.count({ where }),
+      context.db.repositories.codeReviews.count({ where }),
+      context.db.repositories.testRuns.count({ where }),
+      context.db.repositories.agentTasks.count({ where }),
+    ]);
+    const index = context.indexes.get(project.id);
+    response.json({
+      summary: {
+        files: index?.files.length ?? 0,
+        conversations,
+        scans,
+        reviews,
+        testRuns,
+        tasks,
+      },
+    });
+  });
+
   router.get('/:id/files', async (request, response) => {
     await ownedProject(context, request, request.params.id);
     const index = context.indexes.get(request.params.id);
