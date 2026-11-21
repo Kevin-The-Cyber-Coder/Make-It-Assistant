@@ -62,6 +62,7 @@
 - Code review list project filter for organization-scoped review queries.
 - Test run list project filter for organization-scoped test run queries.
 - Agent task list project filter for organization-scoped task queries.
+- Conversation list project filter for organization-scoped conversation queries.
 - React engineering console with all feature workspaces.
 - Vitest unit/integration tests, CI workflow and generated repository status report.
 
