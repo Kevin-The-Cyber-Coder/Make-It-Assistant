@@ -50,7 +50,7 @@
 - AI metrics endpoint for organization-scoped conversation and message counts.
 - Security scan delete endpoint with role and audit checks, and Security Center delete action.
 - Code review delete endpoint with role and audit checks, and Review workspace delete action.
-- Test run delete endpoint with role and audit checks.
+- Test run delete endpoint with role and audit checks, and Testing Lab delete action.
 - Agent task delete endpoint with role and audit checks.
 - Project conversations endpoint for organization-scoped project conversation retrieval.
 - Project security scans endpoint for organization-scoped project scan retrieval.
