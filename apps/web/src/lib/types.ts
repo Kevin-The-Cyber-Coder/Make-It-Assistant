@@ -188,6 +188,20 @@ export interface SystemVersion {
   commit: string | null;
 }
 
+export interface SystemConfig {
+  service: string;
+  timestamp: string;
+  storage: { mode: string };
+  mongo: { configured: boolean };
+  redis: { configured: boolean; connected: boolean };
+  queue: { mode: string };
+  rateLimit: { mode: string };
+  github: { oauthConfigured: boolean; serverTokenConfigured: boolean };
+  sandbox: { configured: boolean };
+  osv: { enabled: boolean };
+  providers: { configured: string[]; total: number };
+}
+
 export interface Overview {
   totalProjects: number;
   activeAgentTasks: number;
