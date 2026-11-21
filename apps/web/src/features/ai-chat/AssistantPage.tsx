@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Bot, CornerDownLeft, Cpu, Sparkles, User } from 'lucide-react';
+import { Bot, CornerDownLeft, Cpu, Download, Sparkles, User } from 'lucide-react';
 import { api, getAccessToken } from '@/lib/api';
 import type { ConversationMetrics, Message } from '@/lib/types';
 import { Badge, Button, Card, EmptyState, PageHeader, Select, StatCard, Textarea } from '@/components/ui';
@@ -42,6 +42,28 @@ export function AssistantPage() {
     if (!input.trim()) return;
     const result = await api.post<{ enhanced: string }>('/ai/enhance', { message: input });
     setInput(result.enhanced);
+  }
+
+  async function exportConversation() {
+    if (!conversationId) return;
+    try {
+      const base = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api/v1';
+      const token = getAccessToken();
+      const response = await fetch(`${base}/conversations/${conversationId}/export`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error(`Export failed (${response.status})`);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `conversation-${conversationId}.json`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Export failed');
+    }
   }
 
   async function send() {
@@ -174,6 +196,7 @@ export function AssistantPage() {
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <Button onClick={() => void send()} disabled={busy || !input.trim()}><CornerDownLeft className="h-4 w-4" /> {busy ? 'Generating…' : 'Send'}</Button>
               <Button variant="outline" size="sm" onClick={() => void enhance()} disabled={!input.trim()}>Enhance prompt</Button>
+              {conversationId && <Button variant="outline" size="sm" onClick={() => void exportConversation()}><Download className="h-3.5 w-3.5" /> Export</Button>}
               {conversationId && <Badge className="font-mono">{conversationId.slice(-8)}</Badge>}
               <span className="ml-auto text-[11px] text-slate-600">{usageLabel ? `${usageLabel} · ` : ''}{status || 'Ready'}</span>
             </div>
