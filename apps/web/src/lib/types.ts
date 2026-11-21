@@ -66,6 +66,20 @@ export interface SecurityScan {
   createdAt: string;
 }
 
+export interface SecurityMetrics {
+  totalScans: number;
+  scansLast24h: number;
+  cumulativeFindingsBySeverity: Record<string, number>;
+  latestScan: {
+    id: string;
+    createdAt: string;
+    filesScanned: number;
+    findings: number;
+    summary: Record<string, number>;
+    risk: string;
+  } | null;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
