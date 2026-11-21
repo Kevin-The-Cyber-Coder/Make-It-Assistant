@@ -21,6 +21,7 @@
 - Authenticated system status endpoint and Settings runtime diagnostics panel.
 - Readiness endpoint (`/readyz`) with storage/Redis checks for deployment probes.
 - Agent task metrics endpoint and Agent Console summary cards.
+- Security scan metrics endpoint and Security Center telemetry cards.
 - React engineering console with all feature workspaces.
 - Vitest unit/integration tests, CI workflow and generated repository status report.
 
