@@ -44,7 +44,7 @@
 - Test run detail endpoint for organization-scoped test run retrieval.
 - Conversation detail endpoint for organization-scoped conversation retrieval.
 - Conversation title update endpoint with audit logging.
-- GitHub repository connection delete endpoint with role and audit checks.
+- GitHub repository connection delete endpoint with role and audit checks, and GitHub console disconnect action.
 - React engineering console with all feature workspaces.
 - Vitest unit/integration tests, CI workflow and generated repository status report.
 
