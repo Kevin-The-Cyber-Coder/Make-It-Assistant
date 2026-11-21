@@ -51,6 +51,7 @@
 - Security scan delete endpoint with role and audit checks.
 - Code review delete endpoint with role and audit checks.
 - Test run delete endpoint with role and audit checks.
+- Agent task delete endpoint with role and audit checks.
 - React engineering console with all feature workspaces.
 - Vitest unit/integration tests, CI workflow and generated repository status report.
 
