@@ -8,3 +8,4 @@ Supports optional query parameters:
 
 - `projectId` - filter scans for a specific project
 - `status` - filter scans by status
+- `q` - filter scans by finding title, description, or file path text
