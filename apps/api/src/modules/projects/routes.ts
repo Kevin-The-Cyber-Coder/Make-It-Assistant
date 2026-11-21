@@ -151,6 +151,16 @@ export function createProjectRouter(context: AppContext): Router {
     });
   });
 
+  router.get('/:id/conversations', async (request, response) => {
+    const project = await ownedProject(context, request, request.params.id);
+    const conversations = await context.db.repositories.conversations.find({
+      where: { organizationId: request.actor!.organizationId, projectId: project.id },
+      sort: { field: 'updatedAt', direction: 'desc' },
+      limit: 100,
+    });
+    response.json({ conversations });
+  });
+
   router.get('/:id/files', async (request, response) => {
     await ownedProject(context, request, request.params.id);
     const index = context.indexes.get(request.params.id);
