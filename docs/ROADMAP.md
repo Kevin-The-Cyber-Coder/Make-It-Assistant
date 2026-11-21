@@ -42,6 +42,7 @@
 - Project export endpoint and Projects workspace export action.
 - Code review detail endpoint for organization-scoped review retrieval.
 - Test run detail endpoint for organization-scoped test run retrieval.
+- Conversation detail endpoint for organization-scoped conversation retrieval.
 - React engineering console with all feature workspaces.
 - Vitest unit/integration tests, CI workflow and generated repository status report.
 
