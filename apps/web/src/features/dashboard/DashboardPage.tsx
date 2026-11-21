@@ -1,15 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, Pie, PieChart, Cell } from 'recharts';
-import { ArrowUpRight, Bot, FileClock, FolderGit2, GitPullRequest, ShieldAlert, Sparkles } from 'lucide-react';
+import { Activity, ArrowUpRight, Bot, FileClock, FolderGit2, GitPullRequest, ShieldAlert, Sparkles } from 'lucide-react';
 import { api } from '@/lib/api';
-import type { AuditSummary, Overview } from '@/lib/types';
+import type { AuditSummary, Overview, SystemStatus } from '@/lib/types';
 import { Badge, Card, EmptyState, PageHeader, StatCard, Spinner } from '@/components/ui';
 import { formatDate, severityClass, timeAgo } from '@/lib/utils';
 
 export function DashboardPage() {
   const { data, isLoading, error } = useQuery({ queryKey: ['overview'], queryFn: () => api.get<{ overview: Overview }>('/analytics/overview'), refetchInterval: 20_000 });
   const audit = useQuery({ queryKey: ['audit-summary-dashboard'], queryFn: () => api.get<AuditSummary>('/audit/summary'), refetchInterval: 30_000 });
+  const system = useQuery({ queryKey: ['system-status-dashboard'], queryFn: () => api.get<SystemStatus>('/system/status'), refetchInterval: 30_000 });
 
   if (isLoading) return <div className="flex h-64 items-center justify-center"><Spinner className="h-6 w-6" /></div>;
   if (error || !data) return <EmptyState title="Dashboard unavailable" description={error instanceof Error ? error.message : 'Could not load metrics.'} />;
@@ -84,7 +85,7 @@ export function DashboardPage() {
         </Card>
       </div>
 
-      <div className="mt-5 grid gap-5 lg:grid-cols-2">
+      <div className="mt-5 grid gap-5 lg:grid-cols-3">
         <Card>
           <div className="panel-header">
             <div><div className="label">Activity</div><div className="mt-1 text-sm font-medium text-white">Recent commits</div></div>
@@ -122,6 +123,24 @@ export function DashboardPage() {
               ))}
             </div>
           ) : <EmptyState title="No conversations yet" description="Start a session in the AI Assistant to build project context." icon={<Bot className="h-5 w-5" />} />}
+        </Card>
+
+        <Card>
+          <div className="panel-header">
+            <div><div className="label">Runtime</div><div className="mt-1 text-sm font-medium text-white">System health</div></div>
+            <Activity className="h-4 w-4 text-slate-500" />
+          </div>
+          {system.data ? (
+            <div className="space-y-3 px-5 py-4 text-xs">
+              <div className="flex justify-between"><span className="text-slate-500">Status</span><span className="font-mono text-mint">{system.data.status}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">Storage</span><span className="font-mono text-slate-200">{system.data.storage.mode}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">Redis</span><span className="font-mono text-slate-200">{system.data.redis.connected ? 'connected' : system.data.redis.configured ? 'configured' : 'disabled'}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">Queue</span><span className="font-mono text-slate-200">{system.data.queue.mode}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">Rate limit</span><span className="font-mono text-slate-200">{system.data.rateLimit.mode}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">Uptime</span><span className="font-mono text-slate-200">{system.data.uptimeSeconds}s</span></div>
+              <Link to="/settings" className="inline-flex items-center gap-1 pt-1 text-accent-400 hover:text-accent-300">Open settings <ArrowUpRight className="h-3 w-3" /></Link>
+            </div>
+          ) : <EmptyState title="Status unavailable" description={system.error instanceof Error ? system.error.message : 'Could not load system status.'} />}
         </Card>
       </div>
 
