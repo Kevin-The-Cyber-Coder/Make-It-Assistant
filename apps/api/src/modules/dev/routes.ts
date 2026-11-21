@@ -79,6 +79,15 @@ export function createDevRouter(context: AppContext): Router {
     });
   });
 
+  router.get('/reviews/:id', async (request, response) => {
+    const review = await context.db.repositories.codeReviews.findById(request.params.id);
+    if (!review || review.organizationId !== request.actor!.organizationId) {
+      response.status(404).json({ error: { code: 'NOT_FOUND', message: 'Review not found' } });
+      return;
+    }
+    response.json({ review });
+  });
+
   router.get('/reviews/:id/export', async (request, response) => {
     const review = await context.db.repositories.codeReviews.findById(request.params.id);
     if (!review || review.organizationId !== request.actor!.organizationId) {
