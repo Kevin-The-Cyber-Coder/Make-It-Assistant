@@ -47,6 +47,14 @@ export function createGithubRouter(context: AppContext): Router {
     response.json({ repositories });
   });
 
+  router.get('/connections/:id', async (request, response) => {
+    const repository = await context.db.repositories.repositories.findById(request.params.id);
+    if (!repository || repository.organizationId !== request.actor!.organizationId) {
+      throw new AppError('NOT_FOUND', 'Repository connection not found');
+    }
+    response.json({ repository });
+  });
+
   router.delete('/connections/:id', async (request, response) => {
     if (!request.actor!.roles.some((role) => role === 'owner' || role === 'admin')) {
       throw new AppError('FORBIDDEN', 'Owner or admin role required');
