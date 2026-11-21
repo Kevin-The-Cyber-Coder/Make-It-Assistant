@@ -115,6 +115,14 @@ export interface GitHubMetrics {
   serverTokenConfigured: boolean;
 }
 
+export interface UsageMetrics {
+  totalRequests: number;
+  totalTokens: number;
+  avgLatencyMs: number;
+  successRate: number;
+  byProvider: Record<string, number>;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
