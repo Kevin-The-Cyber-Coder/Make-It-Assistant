@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { FlaskConical } from 'lucide-react';
-import { api } from '@/lib/api';
+import { Download, FlaskConical } from 'lucide-react';
+import { api, getAccessToken } from '@/lib/api';
 import type { TestingMetrics } from '@/lib/types';
 import { Badge, Button, Card, EmptyState, PageHeader, StatCard, Textarea } from '@/components/ui';
 import { formatDate } from '@/lib/utils';
@@ -37,6 +37,29 @@ export function TestingPage() {
     }
   }
 
+  async function exportRun() {
+    if (!run) return;
+    setError('');
+    try {
+      const base = (import.meta.env.VITE_API_URL as string | undefined) ?? '/api/v1';
+      const token = getAccessToken();
+      const response = await fetch(`${base}/dev/testing/runs/${run.id}/export`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error(`Export failed (${response.status})`);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `test-run-${run.id}.json`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Export failed');
+    }
+  }
+
   return (
     <>
       <PageHeader eyebrow="Quality intelligence" title="Testing Lab" description="Generate framework-appropriate test skeletons. Execution is gated behind an approved isolated sandbox worker." />
@@ -64,7 +87,7 @@ export function TestingPage() {
         <div className="space-y-5">
           {run && <Card className="p-5"><div className="label mb-2">Execution note</div><div className="text-sm text-slate-300">{run.output}</div><Badge className="mt-3">{run.status}</Badge></Card>}
           <Card>
-            <div className="panel-header"><div className="label">Generated skeletons</div><Badge>{run?.generatedTests.length ?? 0}</Badge></div>
+            <div className="panel-header"><div className="label">Generated skeletons</div><div className="flex items-center gap-2">{run && <Button variant="outline" size="sm" onClick={() => void exportRun()}><Download className="h-3.5 w-3.5" /> Export</Button>}<Badge>{run?.generatedTests.length ?? 0}</Badge></div></div>
             {run?.generatedTests.length ? (
               <div className="max-h-[520px] space-y-4 overflow-y-auto p-4">
                 {run.generatedTests.map((test) => (
