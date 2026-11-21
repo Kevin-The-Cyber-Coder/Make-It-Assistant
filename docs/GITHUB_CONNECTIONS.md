@@ -2,6 +2,10 @@
 
 ## API
 
+### `GET /api/v1/github/connections`
+
+Requires authentication. Returns stored GitHub repository connections for the authenticated organization. Supports optional `q` query parameter to filter by owner or repository name.
+
 ### `GET /api/v1/github/connections/:id`
 
 Requires authentication. Returns a single stored GitHub repository connection for the authenticated organization.
