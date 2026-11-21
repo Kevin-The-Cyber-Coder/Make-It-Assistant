@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { AppError, conversationCreateSchema, paginationSchema } from '@make-it-ai/shared';
 import type { Conversation } from '@make-it-ai/shared';
 import type { AppContext } from '../../context';
+import { audit } from '../../lib/audit';
 import { requireAuth, validate } from '../../middleware';
 
 export function createConversationRouter(context: AppContext): Router {
@@ -66,6 +67,21 @@ export function createConversationRouter(context: AppContext): Router {
       limit: 500,
     });
     response.json({ conversation, messages });
+  });
+
+  router.get('/:id/export', async (request, response) => {
+    const conversation = await context.db.repositories.conversations.findById(request.params.id);
+    if (!conversation || conversation.organizationId !== request.actor!.organizationId) {
+      throw new AppError('NOT_FOUND', 'Conversation not found');
+    }
+    const messages = await context.db.repositories.messages.find({
+      where: { organizationId: request.actor!.organizationId, conversationId: conversation.id },
+      sort: { field: 'createdAt', direction: 'asc' },
+      limit: 5000,
+    });
+    await audit(context, request, 'conversation.export', 'conversation', conversation.id, { messageCount: messages.length });
+    response.setHeader('Content-Disposition', `attachment; filename="conversation-${conversation.id}.json"`);
+    response.json({ conversation, messages, exportedAt: new Date().toISOString() });
   });
 
   router.delete('/:id', async (request, response) => {
