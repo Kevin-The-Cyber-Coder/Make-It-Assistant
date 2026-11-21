@@ -8,3 +8,4 @@ Supports optional query parameters:
 
 - `projectId` - filter tasks for a specific project
 - `status` - filter tasks by status
+- `q` - filter tasks by objective text
